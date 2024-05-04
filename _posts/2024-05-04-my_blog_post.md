@@ -1,8 +1,9 @@
 # Vertex quantization in Omniforce Game Engine
 ## Renderer design considerations
-From the very beginning of development of my engine's renderer, I wanted it to support highly detailed _meshes_.
+From the very beginning of development of my engine's renderer, I wanted it to support highly detailed _meshes_. To make that possible, my renderer required a vertex compression system which not just quantizes vertex positions to 16-bit floats. I needed higher compression ratio and very fast, near-instant decoding algorithm alongside with minimal precision loss.
 
-To make that possible, my renderer required a vertex compression system which not just quantizes vertex positions to 16-bit floats. I needed higher compression ratio and very fast, near-instant decoding algorithm alongside with minimal precision loss.
+Another thing to consider is that my engine's renderer is built around mesh shaders, meaning that all meshes are split into clusters with up to 64 vertices and 124 triangles. This is very important note, which will be used for position compression. Mesh shaders are supported in NVIDIA Turing+ and AMD RDNA2+ GPUs. On NVIDIA, FP16 and FP32 computing rates are the same starting from Ampere generation, however, we can benefit from it on Turing GPUs, where FP16 computing rate is doubled compared to FP32 - this is another thing to consider when designing compression system.
+
 Meshes in my engine's target scenes can have more than 200k polygons - which effectively proves my statement above about compression system requirements. To summarize, I can highlight these features which have to be present in quantization system:
 - High compression rate, more than constant 50%
 - Capability of runtime decoding
@@ -15,7 +16,12 @@ For normal encoding, I chose good-old Octahedron-encoding method mentioned at [t
 
 For further compression, I decided to compress `vec2` which was returned after Octahedron encoding to 16-bit float. It takes some good bit of precision, but considering that most of the materials use normal maps which are 8-bit - I decided that final precision loss is acceptable - it varied around 0.015. Using this method, I effectively compressed 12-bytes `vec3` normal to 4-bytes `fp16vec2` normal with acceptable precision loss.
 
-#### Encoding (C++, using GLM library for math):
+To summarize:
+- Use octahedron encoding with further compression to fp16
+- Precision loss is approximately 0.015
+- Decoding kept simple, nearly free
+
+#### Encoding code (C++, using GLM library for math):
 ```cpp
 glm::vec2 OctWrap(glm::vec2 v) {
 	glm::vec2 w = 1.0f - glm::abs(glm::vec2(v.y, v.x));
@@ -32,7 +38,7 @@ glm::u16vec2 QuantizeNormal(glm::vec3 n) {
 	return glm::packHalf(glm::vec2(n.x, n.y));
 }
 ```
-#### Decoding (GLSL)
+#### Decoding code (GLSL)
 ```glsl
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 
@@ -54,4 +60,41 @@ As well as normals, tangents have multiple ways to be quantized. One of the opti
 
 However, as I mentioned above - _very_ fast decoding time is one the biggest requirements. With the "implicit tangent" technique, I could desribe a tangent as angle encoded 16-bit float, but decoding would involve transcendental GPU operations, which I wanted to avoid. Also, considering that such method would only save 2 bytes per vertex compared to my implementation, I decided to go another way.
 
-Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, sign is just 2 values, meaning that it can be represented using a single bit. With some 
+Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, sign is just 2 values, meaning that it can be represented using a single bit. After little research, I came up with a solution - encode that single bit into octahedron-encoded tangent. Very important note: I encode bitangent sign bit ***after*** octahedron and fp16 compression, because if I do it vice-versa, the sign bit can be lost due to compression. I chose lowest bit of Y component - according to IEEE-754 float16 standard, it is lowest bit of mantissa, meaning that it has the least influence on final precision. After my tests, I ended up with approximately 0.03 precision loss for tangents.
+
+Decoding is fairly simple - just use the same method of decoding as we used for normals with one little difference - extract sign bit before decoding using this snippet of code: `float16 sign = float16BitsToUint16(tangent.y) & 1us ? 1.0hf : -1.0hf`
+
+To summarize:
+- Tangents are octahedron-encoded with further compression to fp16
+- Bitangent sign bit is copied to Y component's lowest bit
+- Precision loss is approximately 0.03
+- Decoding is as simple as normal decoding with extra step to extract sign bit
+
+#### Encoding code (C++)
+```cpp
+glm::u16vec2 QuantizeTangent(glm::vec4 t) {
+	glm::u16vec2 q = QuantizeNormal(glm::vec3(t.x, t.y, t.z));
+
+	// If bitangent sign is positive, we set first bit of Y component to 1, otherwise (if it is negative) we set 0
+	q.y = t.w == 1.0f ? q.y | 1u : q.y & ~1u;
+
+	return q;
+}
+```
+
+#### Decoding code (GLSL)
+```glsl
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
+
+f16vec4 DecodeTangent(f16vec2 f)
+{
+	f16vec4 t;
+	t.xyz = DecodeNormal(f);
+	
+	// Check if lowest bit of Y's mantissa is set. If so, bitangent sign is positive, otherwise negative.
+	t.w	= bool(float16BitsToUint16(f.y) & 1us) ? 1.0hf : -1.0hf;
+
+	return t;
+}
+```
