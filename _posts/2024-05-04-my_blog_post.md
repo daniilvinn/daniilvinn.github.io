@@ -122,7 +122,7 @@ Vertex quantization is done using **uniform grid**, where each vertex gets snapp
 Considering that my renderer is cluster-based and is using mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve this, we need to quantize all vertices, lods (if using meshlet-level lods) and all spatial data in general, including meshlets (see below), against *the same grid*.
 #### Precision and bit size
 Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
-![Geometry cracks](https://prnt.sc/Lk5KH0DLrFlL)
+![Geometry cracks](https://files.fm/u/3efu72jjg9)
 
 ### Encoding in meshlet-space
 To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us good 1-6 bits (3-5 in average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode vertex:
@@ -135,4 +135,6 @@ Important note: meshlet centers **must** be quantized as well in order to avoid 
 ### Bit stream
 All this compression and 3-5 bits savings don't make any sense if I still have byte-aligned data structures. I needed a data structure which is not aligned to a byte - I needed a bit stream.
 
-Using a bit stream instead of array of float32/float16/uint/int, I can compress vertices much effectively, because not a single bit will be wasted: data is packed as much as possible. This technique turned out to work really well on GPU - I simply use GPU bit stream reader to fetch vertex data.
+Using a bit stream instead of array of float32/float16/uint/int, I can compress vertices much effectively, because not a single bit will be wasted: data is packed as much as possible. This technique turned out to work really well on GPU - I simply use GPU bit stream reader to fetch vertex data. By providing an offset in *bits* and num of bits to read, the reader returns us a `uint` representing encoded value.
+
+Considering that I deal with non-byte-aligned data, I can't just load some value from bit stream and expect it to have sign. To solve this, I used a trick called "bit extend", which expands sign bit, effectively restoring sign of the value.
