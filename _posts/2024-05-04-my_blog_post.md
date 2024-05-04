@@ -123,7 +123,7 @@ Considering that my renderer is cluster-based and is using mesh shading technolo
 #### Precision and bit size
 Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
 
-![Geometry cracks](https://files.fm/u/3efu72jjg9)
+![Geometry cracks](https://prnt.sc/Lk5KH0DLrFlL)
 
 ### Encoding in meshlet-space
 To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us good 1-6 bits (3-5 in average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode vertex:
@@ -141,3 +141,6 @@ Using a bit stream instead of array of float32/float16/uint/int, I can compress 
 Considering that I deal with non-byte-aligned data, I can't just load some value from bit stream and expect it to have sign. To solve this, I used a trick called "bit extend", which expands sign bit, effectively restoring sign of the value.
 
 ### Per-meshlet bitrate
+So far, I had uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation, each consecutive LOD will have spatially bigger and bigger meshlets, which increases bitrate for all previous LODs, effectively eliminating the entire point of encoding in meshlet-space.
+
+To solve this, 
