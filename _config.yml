@@ -18,7 +18,7 @@ linkedin_username: "daniil-vinnik-a44655245"
 #########################################################################################
 ######### Nothing below needs to be changed (unless you know what you're doing) #########
 #########################################################################################
-theme: "minimal"
+theme: "minima"
 
 rss: rss
 
