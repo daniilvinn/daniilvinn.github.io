@@ -10,7 +10,7 @@ Meshes in my engine's target scenes can have more than 200k polygons - which eff
 - Nearly instant decoding time
 - Random access from Visibility Buffer
 
-## Implementation
+## Implementation, part 1. Vertex attribute compression
 ### Normal compression
 For normal encoding, I chose good-old Octahedron-encoding method mentioned at [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they basically represent points on unit sphere. Sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`!
 
@@ -60,7 +60,7 @@ As well as normals, tangents have multiple ways to be quantized. One of the opti
 
 However, as I mentioned above - _very_ fast decoding time is one the biggest requirements. With the "implicit tangent" technique, I could desribe a tangent as angle encoded 16-bit float, but decoding would involve transcendental GPU operations, which I wanted to avoid. Also, considering that such method would only save 2 bytes per vertex compared to my implementation, I decided to go another way.
 
-Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, sign is just 2 values, meaning that it can be represented using a single bit. After little research, I came up with a solution - encode that single bit into octahedron-encoded tangent. Very important note: I encode bitangent sign bit ***after*** octahedron and fp16 compression, because if I do it vice-versa, the sign bit can be lost due to compression. I chose lowest bit of Y component - according to IEEE-754 float16 standard, it is lowest bit of mantissa, meaning that it has the least influence on final precision. After my tests, I ended up with approximately 0.03 precision loss for tangents.
+Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, sign is just 2 values, meaning that it can be represented using a single bit. After little research, I came up with a solution - encode that single bit into octahedron-encoded tangent. **Very important note**: I encode bitangent sign bit *after* octahedron and fp16 compression, because if I do it vice-versa, the sign bit can be lost due to compression. I chose lowest bit of Y component - according to IEEE-754 float16 standard, it is lowest bit of mantissa, meaning that it has the least influence on final precision. After my tests, I ended up with approximately 0.03 precision loss for tangents.
 
 Decoding is fairly simple - just use the same method of decoding as we used for normals with one little difference - extract sign bit before decoding using this snippet of code: `float16 sign = float16BitsToUint16(tangent.y) & 1us ? 1.0hf : -1.0hf`
 
@@ -98,3 +98,22 @@ f16vec4 DecodeTangent(f16vec2 f)
 	return t;
 }
 ```
+
+### UV compression
+Texture coordinate are simply compressed to fp16. However, it may lead to some problems with texture sampling when used on meshes with tiled textures - for example, a terrain.
+
+## Implementation, part 2. Vertex position compression
+Compared to attributes, vertex compression has much more space for creativity. When I was looking through "Deep dive into Nanite Virtualized Geometry" by Brian Karis, I was inspired by their vertex compression system, which is where I got the idea for my own implementation. 
+
+Why not naive fp16 compression? The answer is simple - it doesn't suit almost any of my requirements_: vertex size is still comparably big (16 bits per channel) and it has large error with big meshes. I needed another, better way for vertex position compression.
+
+When I was implementing my system, I kept in mind three factors:
+- My renderer is cluster-based
+- Float32 and float16 can represent values far beyond mesh AABB, which is reduntant and only introduces additional "worthless" bits.
+- Do I really need byte aligned data-structures? (spoiler: no)
+
+### Grid quantization
+#### Overview
+Vertex quantization is done using **uniform grid**, where each vertex gets snapped to it. Grid step is an option - it can vary from 4 to 16 bits, which means that grid step varies from `1 / pow(2, 4)` to `1 / pow(2, 16)`. Compression is done with this code: `round(x * pow(2, grid_precision))`, which returns us a signed integer representing grid step count (essentially, a compressed value).
+#### Avoiding cracks
+Considering that my renderer is cluster-based and is using mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve this, we need to quantize all vertices and lods (if using meshlet-level lods) against *the same grid*.
