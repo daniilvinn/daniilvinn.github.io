@@ -123,7 +123,7 @@ Considering that my renderer is cluster-based and is using mesh shading technolo
 #### Precision and bit size
 Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
 
-![Geometry cracks](https://prnt.sc/Lk5KH0DLrFlL)
+![Geometry cracks](https://ibb.co/mtzwNXn)
 
 ### Encoding in meshlet-space
 To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us good 1-6 bits (3-5 in average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode vertex:
@@ -141,6 +141,18 @@ Using a bit stream instead of array of float32/float16/uint/int, I can compress 
 Considering that I deal with non-byte-aligned data, I can't just load some value from bit stream and expect it to have sign. To solve this, I used a trick called "bit extend", which expands sign bit, effectively restoring sign of the value.
 
 ### Per-meshlet bitrate
-So far, I had uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation, each consecutive LOD will have spatially bigger and bigger meshlets, which increases bitrate for all previous LODs, effectively eliminating the entire point of encoding in meshlet-space.
+So far, I had uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation of meshlet-level lods, each consecutive LOD will have spatially bigger and bigger meshlets, which increases bitrate for all previous LODs, effectively eliminating the entire point of encoding in meshlet-space (due to the fact that LODmax meshlet(s) may be as big as source mesh).
 
-To solve this, 
+To solve this problem, I decided to have variable per-meshlet bitrate. Now, each each meshlet has its own bitrate which equals to worst-case bitrate among meshlet vertices. It requires storing bitrate of meshlet data, however, it is not an issue, since it can be easily packed in a single `uint` variable with `vertex_count` and `triangle_count` values.
+
+### Compression results
+Considering that compression is done based on per-meshlet bitrate, it highly depends on such variables
+as: parameters passed to mesh clusterizer, desired precision and overall mesh spatial size.
+
+For test, I quantized a [pistol model](https://sketchfab.com/3d-models/flintlock-pistol-6c3788f102474476b57a8d9b7f4ee9e8) using 8-bit grid. Pistol is ~24 units (floats) in size. Results are:
+- Uncompressed size in bytes: 335616
+- Compressed size in bytes: 87808
+- Rate: 3.82
+- Grid precision: 8 bits
+- Min precision loss: 0
+- Max precision loss: 0.0019
