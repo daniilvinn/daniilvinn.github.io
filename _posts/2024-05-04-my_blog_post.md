@@ -145,6 +145,11 @@ So far, I had uniform bitrate for each vertex in every meshlet across all LODs, 
 
 To solve this problem, I decided to have variable per-meshlet bitrate. Now, each each meshlet has its own bitrate which equals to worst-case bitrate among meshlet vertices. It requires storing bitrate of meshlet data, however, it is not an issue, since it can be easily packed in a single `uint` variable with `vertex_count` and `triangle_count` values.
 
+### Decoding 
+As mentioned in previous slides, I wanted decoding to be as fast as possible.
+To decode, I needed to convert a signed encoded vertex to a float, divide it by `pow(2, precision)` and add meshlet center which vertex belongs to to transform from meshlet-space to local space.
+In my implementation, I use GLSL built-in ldexp() function for division of a float by POT - it basically adds a signed integer to float’s exponent, effectively multiplying / dividing it by POT value.
+
 ### Compression results
 Considering that compression is done based on per-meshlet bitrate, it highly depends on such variables
 as: parameters passed to mesh clusterizer, desired precision and overall mesh spatial size.
@@ -156,3 +161,113 @@ For test, I quantized a [pistol model](https://sketchfab.com/3d-models/flintlock
 - Grid precision: 8 bits
 - Min precision loss: 0
 - Max precision loss: 0.0019
+
+### Encoding (C++)
+```cpp
+// Quantize by addition of AABB's channel min value to remove sign and multiplying by unit grid size (`1u << bitrate`).
+// Preserve sign for bit extend
+uint32 QuantizeVertexChannel(float32 f, uint32 local_bitrate, uint32 meshlet_bitrate) {
+	int32 v = std::round(f * (1u << local_bitrate));
+	uint32 result = v < 0 ? (1u << meshlet_bitrate) + v : v;
+	return result;
+}
+
+const uint32 vertex_bitrate = 8;
+uint32 grid_size = 1u << vertex_bitrate;
+for (auto& meshlet_bounds : mesh_lods[i].cull_data) {
+	uint32 meshlet_bitrate = std::clamp((uint32)std::ceil(std::log2(meshlet_bounds.radius * 2 * grid_size)), 1u, 32u); // we need diameter of a sphere, not radius
+
+	RenderableMeshlet& meshlet = mesh_lods[i].meshlets[meshlet_idx];
+
+	meshlet.vertex_bit_offset = vertex_stream->GetNumBitsUsed();
+	meshlet.bitrate = meshlet_bitrate;
+
+	meshlet_bounds.bounding_sphere_center = glm::round(meshlet_bounds.bounding_sphere_center * float32(grid_size)) / float32(grid_size);
+
+	uint32 base_vertex_offset = mesh_lods[i].meshlets[meshlet_idx].vertex_offset;
+	for (uint32 vertex_idx = 0; vertex_idx < meshlet.vertex_count; vertex_idx++) {
+		for(uint32 vertex_channel = 0; vertex_channel < 3; vertex_channel++) {
+			float32 original_vertex = deinterleaved_vertex_data[base_vertex_offset + vertex_idx][vertex_channel];
+			float32 meshlet_space_value = original_vertex - meshlet_bounds.bounding_sphere_center[vertex_channel];
+
+			uint32 value = quantizer.QuantizeVertexChannel(
+				meshlet_space_value,
+				vertex_bitrate,
+				meshlet_bitrate
+			);
+
+			vertex_stream->Append(meshlet_bitrate, value);
+		}
+	}
+	meshlet_idx++;
+}
+```
+### Decoding (GLSL)
+```glsl
+layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer ReadOnlyBitStream {
+	uint storage[];
+};
+
+uint BitStreamRead(ReadOnlyBitStream bitstream, uint num_bits, uint bit_offset) {
+	uint value = 0;
+
+	// Optimization by using right shift instead of division by 32.
+	// Here I find uint cell index within a bit stream storage based on requested offset.
+	// It works because shifting to the right is equal to the division by value which is a power of 2.
+	uint index = bit_offset >> 5; // >> 5 instead of division by 32
+
+	// Optimization by using bit masking instead of modulo op.
+	// Here I find a bit offset within a single uint cell
+	// It works because I needed do find a 32 modulo of `data`, and 32 is 2^5, 
+	// so I can simply bitmask all other bits except of first 4. 
+	// This way only first 4 bits are left, which is the value I needed
+	uint local_offset = bit_offset & 0x1F;
+
+	// Create a bitmask based on local offset and num of bits to read,
+	// which will allow to read only necessary values from a cell
+	uint bitmask = ((1 << num_bits) - 1) << local_offset;
+
+	// Shift the read bits back to the beginning of a value
+	value = (bitstream.storage[index] & bitmask) >> local_offset;
+
+	// If value is not encoded entirely within a single cell, we need to do a second read from next cell
+	if (local_offset + num_bits > 32u) {
+		// Write new bitmask based on num of bits left to read
+		bitmask = ((1 << (num_bits - (32u - local_offset))) - 1);
+
+		// Read value using bitmask and shift it to the right, so values which were read by previous read are not overriden
+		value |= (bitstream.storage[index + 1] & bitmask) << (32u - local_offset);
+	}
+
+	return value;
+}
+
+vec3 DecodeVertex(const ivec3 encoded_vertex, int vertex_bitrate, const vec3 meshlet_center) {
+	return ldexp(vec3(encoded_vertex), ivec3(-vertex_bitrate)) + meshlet_center;
+}
+```
+
+## Performance tests
+Final stage of my journey with quantization is profiling. With NVIDIA NSight Graphics, I managed to make 2 captures in - with and without quanzation, each of them captured 3 frames using multi-pass metrics. Inputs were completely identical: scene and its TRS is the same (Amazon Lumberyard Bistro Exterior), with identical camera settings and full unlit scene.
+
+Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driver. Results are:
+- +30% L2 Read Hit Rate from L1
+- +20% L2 Read Hit Rate
+- +~20% L1TEX throughputs including texture-related ones (maybe affected by quantized UVs?).
+- -15-20% VRAM throughput
+- Slightly increased SM Instruction throughputs (~10-15%)
+- -25% frame time: 2.1ms, down from 2.8ms.
+
+Profiler screenshots (first capture is no compression, second is full compression):
+![first screenshot of profiling metrics](https://i.ibb.co/qgBDLJ1/Screenshot-2.png)
+![second screenshot of profiling metrics](https://i.ibb.co/YX51VFJ/Screenshot-3.png)
+![third screenshot of profiling metrics](https://i.ibb.co/6ndVVqs/Screenshot-4.png)
+
+## Conclusion
+This quantization system is definitely a win for my engine and almost perfectly fits my needs: high compression rate, fast decode and it works with meshlet-level LODs. It impressively decreased memory foorprint, increased profiling metrics and even lowered my frame time by 25% in average.
+
+However, there still a space for improvements:
+- I assume that bit stream implementation can be optimized further, nonetheless, I tried my best to squeeze performance out of it
+- Since normals and tangents are unit vectors even after compression, instead of storing fp16 octahedron-encoded normals and tangents, I could extract 15 bit mantissa + 1 bit sign of each of them, effectively preserving much more precision. Yet I am not sure how complex would decoding be, so for now I left it as-is.
+
+Thanks for reading!
