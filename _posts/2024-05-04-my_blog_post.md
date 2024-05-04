@@ -123,7 +123,7 @@ Considering that my renderer is cluster-based and is using mesh shading technolo
 #### Precision and bit size
 Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
 
-![Geometry cracks](https://ibb.co/mtzwNXn)
+![Geometry cracks](https://i.ibb.co/sQ3GW6T/image.png)
 
 ### Encoding in meshlet-space
 To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us good 1-6 bits (3-5 in average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode vertex:
