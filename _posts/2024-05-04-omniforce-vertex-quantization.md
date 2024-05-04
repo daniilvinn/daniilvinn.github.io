@@ -2,7 +2,7 @@
 ## Renderer design considerations
 From the very beginning of development of my engine's renderer, I wanted it to support highly detailed _meshes_. To make that possible, my renderer required a vertex compression system which not just quantizes vertex positions to 16-bit floats. I needed higher compression ratio and very fast, near-instant decoding algorithm alongside with minimal precision loss.
 
-Another thing to consider is that my engine's renderer is built around mesh shaders, meaning that all meshes are split into clusters with up to 64 vertices and 124 triangles. This is very important note, which will be used for position compression. On NVIDIA GPUs, FP16 and FP32 computing rates are the same starting from Ampere generation, however, I can benefit from it on Turing GPUs, where FP16 computing rate is doubled compared to FP32 - this is one more thing to consider when designing compression system.
+Another thing to consider is that my engine's renderer is built around mesh shaders. This is very important note, which will be used for position compression. On NVIDIA GPUs, FP16 and FP32 computing rates are the same starting from Ampere generation, however, I can benefit from it on Turing GPUs, where FP16 computing rate is doubled compared to FP32 - this is one more thing to consider when designing compression system.
 
 Meshes in my engine's target scenes can have more than 200k polygons - which effectively proves my statement above about compression system requirements. 
 
