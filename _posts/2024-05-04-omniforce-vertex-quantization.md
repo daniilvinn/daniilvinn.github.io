@@ -252,7 +252,7 @@ vec3 DecodeVertex(const ivec3 encoded_vertex, int vertex_bitrate, const vec3 mes
 ## Performance tests
 Final stage of my journey with quantization is profiling. With NVIDIA NSight Graphics, I managed to make 2 captures: with and without compression, each of them captured 3 frames using multi-pass metrics. Inputs were completely identical: scene and its TRS is the same (Amazon Lumberyard Bistro Exterior), with identical camera settings and full unlit scene.
 
-Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driver. Results are:
+Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driver. Metrics are compared to no quantization capture, not SOL. Results are:
 - +25% L2 Read Hit Rate from L1
 - +15% L2 Read Hit Rate
 - +~10% L1TEX throughputs including texture-related ones (maybe affected by quantized UVs?).
