@@ -266,9 +266,12 @@ Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driv
 - -25% frame time: 2.1ms, down from 2.8ms.
 
 Profiler screenshots (first capture is no compression, second is full compression):
-![first screenshot of profiling metrics](https://i.ibb.co/qgBDLJ1/Screenshot-2.png)
-![second screenshot of profiling metrics](https://i.ibb.co/YX51VFJ/Screenshot-3.png)
-![third screenshot of profiling metrics](https://i.ibb.co/6ndVVqs/Screenshot-4.png)
+- Increased L2 cache hit rates:
+![nsight L2 cache hits rates screenshot](https://i.ibb.co/xGnS91S/Screenshot-5.png)
+- Slightly increased SM instruction thoughputs. I assume that it happened due to additional decoding cost.
+![second screenshot of profiling metrics](https://i.ibb.co/Lpbyc1h/Screenshot-6.png)
+- VRAM pressure was decreased as well:
+![third screenshot of profiling metrics](https://i.ibb.co/zPDrNY3/Screenshot-7.png)
 
 ## Conclusion
 This quantization system is definitely a win for my engine and almost perfectly fits my needs: high compression rate, fast decode and it works well with meshlet-level LODs. It impressively decreased memory footprint, increased cache hit rates and even lowered my frame time by 25% in average.
