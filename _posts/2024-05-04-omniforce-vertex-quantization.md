@@ -1,4 +1,9 @@
 # Vertex quantization in Omniforce Game Engine
+## The problem
+While textures can be heavily mip-mapped and contain just enough data encoded in single pixel (especially with BC1/BC7 compression), meshes are a bit more complicated. To reduce VRAM bandwidth, we can use LODs. However, it is not the panacea - I still have *tons* of redundant data encoded in a single vertex. By "redundant" I mean either excessive data/precision (e.g. FP32-encoded normals) or some values / bits which don't affect on final mesh at all, for example: I have a mesh which is 10 units in size (10 floats). Nonetheless, a single 32-bit float can represent values far beyond 10, meaning that we store *redundant data*, which can be compressed away. 
+
+The more vertices in some particular mesh we have, the more we need to wait until it is transferred to GPU caches, effectively increasing frame time. Another thing worth to mention - the more bytes a single vertex takes, the less vertices we can fit in a single cache line / entire cache, meaning that we would need 1. more reads 2. more swaps in cache. If we are register-bound, compressing vertices can improve performance due to the fact that we have less data per vertex and we can fit more data in registers, especially with FP16 values.
+
 ## Renderer design considerations
 From the very beginning of development of my engine's renderer, I wanted it to support highly detailed _meshes_. To make that possible, my renderer required a vertex compression system which not just quantizes vertex positions to 16-bit floats. I needed higher compression ratio and very fast, near-instant decoding algorithm alongside with minimal precision loss.
 
