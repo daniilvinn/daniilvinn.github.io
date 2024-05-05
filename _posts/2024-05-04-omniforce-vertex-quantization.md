@@ -127,7 +127,7 @@ When I was implementing my system, I kept in mind three factors:
 #### Overview
 Vertex quantization is done using **uniform grid**, where each vertex gets snapped to it. Grid step is an option - it can be set to a value in range of 4 to 16, which means that grid step varies from `1 / pow(2, 4)` to `1 / pow(2, 16)`. Compression is done with this code: `round(x * pow(2, grid_precision))`, which returns us a signed integer representing grid step count (essentially, a compressed value). See the photos below for visualization of quantization process.
 
-Say, we have a grid with 0.001 step. Outlined range is redundant precision which should me compressed away. On next photo, we have a 1D vertex laying at 6.39342:
+Say, we have a grid with 0.001 step. Outlined range is redundant precision which should me compressed away by *snapping to the grid*. On next photo, we have a 1D vertex laying at 6.39342:
 ![grid visualization, pre-compression vertex](https://i.ibb.co/fxLzNh0/Screenshot-11.png)
 
 After compression against a grid with 0.001 step, our vertex lays perfectly on 6.393, containing no excessive precision which requires additional bits for encoding:
