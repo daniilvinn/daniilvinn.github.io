@@ -14,7 +14,7 @@ To summarize, I can highlight these features which have to be present in quantiz
 
 ## Implementation, part 1. Attribute compression
 ### Normal compression
-For normal encoding, I chose good-old Octahedron-encoding method mentioned at [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they represent points on unit sphere. Sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`!
+For normal encoding, I chose good-old Octahedron-encoding method mentioned at [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they represent points on unit sphere. Sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`!
 
 For further compression, I decided to compress `vec2` which was returned after Octahedron encoding to 16-bit float. It takes some good bit of precision, but considering that most of the materials use 8-bit normal maps - I think that final precision loss is acceptable - it varied around 0.015. Using this method, I effectively compressed 12-bytes `vec3` normal to 4-bytes `fp16vec2` normal with acceptable precision loss.
 
@@ -106,7 +106,7 @@ f16vec4 DecodeTangent(f16vec2 f)
 Texture coordinates are simply compressed to fp16. However, it may lead to some problems with texture sampling when used on meshes with tiled textures - for example, a terrain.
 
 ## Implementation, part 2. Vertex position compression
-Compared to attributes, vertex compression has much more space for creativity. When I was looking through "Deep dive into Nanite Virtualized Geometry" by Brian Karis, I was inspired by their vertex compression system, which is where I got the idea for my own implementation. 
+Compared to attributes, vertex compression has much more space for creativity. When I was looking through ["Deep dive into Nanite Virtualized Geometry"](https://www.youtube.com/watch?v=eviSykqSUUw&t=3606s&ab_channel=SIGGRAPHAdvancesinReal-TimeRendering) by [Brian Karis](https://twitter.com/briankaris?lang=en), I was inspired by their vertex compression system, which is where I got the idea for my own implementation. 
 
 Why not naive fp16 compression? The answer is simple - it doesn't suit _almost any_ of my requirements: vertex size is still comparably big (16 bits per channel) and it has large error with big meshes. I needed another, better way for vertex position compression.
 
