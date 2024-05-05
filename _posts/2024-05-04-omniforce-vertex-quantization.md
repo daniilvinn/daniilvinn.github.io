@@ -34,7 +34,8 @@ To summarize:
 - Decoding kept simple, nearly free
 
 #### Encoding (C++, using GLM library for math):
-```c_cpp
+
+```cpp
 glm::vec2 OctahedronWrap(glm::vec2 v) {
 	glm::vec2 w = 1.0f - glm::abs(glm::vec2(v.y, v.x));
 	if (v.x < 0.0f) w.x = -w.x;
@@ -50,6 +51,7 @@ glm::u16vec2 QuantizeNormal(glm::vec3 n) {
 	return glm::packHalf(glm::vec2(n.x, n.y));
 }
 ```
+
 #### Decoding (GLSL)
 ```glsl
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
@@ -83,6 +85,7 @@ To summarize:
 - Decoding is as simple as normal decoding with extra step to extract sign bit
 
 #### Encoding code (C++)
+
 ```cpp
 glm::u16vec2 QuantizeTangent(glm::vec4 t) {
 	glm::u16vec2 q = QuantizeNormal(glm::vec3(t.x, t.y, t.z));
@@ -95,6 +98,7 @@ glm::u16vec2 QuantizeTangent(glm::vec4 t) {
 ```
 
 #### Decoding code (GLSL)
+
 ```glsl
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int16 : require
@@ -180,6 +184,7 @@ For test, I quantized [this pistol model](https://sketchfab.com/3d-models/flintl
 - Max precision loss: 0.0019
 
 ### Encoding (C++)
+
 ```cpp
 // Quantize with multiplication by pow(2, precision) with further rounding
 // Preserve sign for bit extend
@@ -189,6 +194,7 @@ uint32 QuantizeVertexChannel(float32 f, uint32 local_bitrate, uint32 meshlet_bit
 	return result;
 }
 ```
+
 ```cpp
 const uint32 vertex_bitrate = 8;
 uint32 grid_size = 1u << vertex_bitrate;
@@ -222,6 +228,7 @@ for (auto& meshlet_bounds : mesh_lods[i].cull_data) {
 }
 ```
 ### Decoding (GLSL)
+
 ```glsl
 layout(buffer_reference, scalar, buffer_reference_align = 4) readonly buffer ReadOnlyBitStream {
 	uint storage[];
