@@ -83,7 +83,7 @@ To summarize:
 - Decoding is as simple as normal decoding with extra step to extract sign bit
 
 #### Encoding code (C++)
-```cpp
+```c++
 glm::u16vec2 QuantizeTangent(glm::vec4 t) {
 	glm::u16vec2 q = QuantizeNormal(glm::vec3(t.x, t.y, t.z));
 
