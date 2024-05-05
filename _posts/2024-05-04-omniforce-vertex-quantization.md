@@ -4,6 +4,9 @@ While textures can be heavily mip-mapped and contain just enough data encoded in
 
 The more vertices in some particular mesh we have, the more we need to wait until it is transferred to GPU caches, effectively increasing frame time. Another thing worth to mention - the more bytes a single vertex takes, the less vertices we can fit in a single cache line / entire cache, meaning that we would need 1. more reads 2. more swaps in cache. If we are register-bound, compressing vertices can improve performance due to the fact that we have less data per vertex and we can fit more data in registers, especially with FP16 values.
 
+Using NVIDIA NSight Graphics profiler, I figured out that even with BC7-compressed textures I still don't have enough L2 cache hit rates and VRAM usage could definitely be lower. On screenshot, it is visible that cache hits are 1. not consistent (maybe often cache swaps?) 2. are about than 60% in general, meaning that about half of the time data is not found in the cache:
+![no compression L2 cache hits](https://i.ibb.co/xJ9TF4N/Screenshot-8.png)
+
 ## Renderer design considerations
 From the very beginning of development of my engine's renderer, I wanted it to support highly detailed _meshes_. To make that possible, my renderer required a vertex compression system which not just quantizes vertex positions to 16-bit floats. I needed higher compression ratio and very fast, near-instant decoding algorithm alongside with minimal precision loss.
 
@@ -122,7 +125,14 @@ When I was implementing my system, I kept in mind three factors:
 
 ### Grid quantization
 #### Overview
-Vertex quantization is done using **uniform grid**, where each vertex gets snapped to it. Grid step is an option - it can be set to a value in range of 4 to 16, which means that grid step varies from `1 / pow(2, 4)` to `1 / pow(2, 16)`. Compression is done with this code: `round(x * pow(2, grid_precision))`, which returns us a signed integer representing grid step count (essentially, a compressed value).
+Vertex quantization is done using **uniform grid**, where each vertex gets snapped to it. Grid step is an option - it can be set to a value in range of 4 to 16, which means that grid step varies from `1 / pow(2, 4)` to `1 / pow(2, 16)`. Compression is done with this code: `round(x * pow(2, grid_precision))`, which returns us a signed integer representing grid step count (essentially, a compressed value). See the photos below for visualization of quantization process.
+
+Say, we have a grid with 0.001 step. Outlined range is redundant precision which should me compressed away. On next photo, we have a 1D vertex laying at 6.39342:
+![grid visualization, pre-compression vertex](https://i.ibb.co/fxLzNh0/Screenshot-11.png)
+
+After compression against a grid with 0.001 step, our vertex lays perfectly on 6.393, containing no excessive precision which requires additional bits for encoding:
+![grid visualization, post-compression vertex](https://i.ibb.co/NVWqgWj/Screenshot-12.png)
+
 #### Avoiding geometry cracks
 Considering that my renderer is cluster-based and is using mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve it, I needed to quantize all vertices, lods (if using meshlet-level lods) and all spatial data in general, including meshlets (see below), against *the same grid*.
 #### Precision and bit size
@@ -266,11 +276,8 @@ Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driv
 - -25% frame time: 2.1ms, down from 2.8ms.
 
 Profiler screenshots (first capture is no compression, second is full compression):
-- Increased L2 cache hit rates:
 ![nsight L2 cache hits rates screenshot](https://i.ibb.co/xGnS91S/Screenshot-5.png)
-- Slightly increased SM instruction thoughputs. I assume that it happened due to additional decoding cost.
 ![second screenshot of profiling metrics](https://i.ibb.co/Lpbyc1h/Screenshot-6.png)
-- VRAM pressure was decreased as well:
 ![third screenshot of profiling metrics](https://i.ibb.co/zPDrNY3/Screenshot-7.png)
 
 ## Conclusion
