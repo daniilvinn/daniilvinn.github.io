@@ -22,7 +22,9 @@ To summarize, I can highlight these features which have to be present in quantiz
 
 ## Implementation, part 1. Attribute compression
 ### Normal compression
-For normal encoding, I chose good-old Octahedron-encoding method mentioned at [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they represent points on unit sphere. Sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`!
+For normal encoding, I chose good-old Octahedron-encoding method mentioned at [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they represent points on unit sphere. Sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`! For visualization, see photo below.
+
+![Visualization of octahedron encoding](https://www.jeremyong.com/images/diamond/octahedral.png)
 
 For further compression, I decided to compress `vec2` which was returned after Octahedron encoding to 16-bit float. It takes some good bit of precision, but considering that most of the materials use 8-bit normal maps - I think that final precision loss is acceptable - it varied around 0.015. Using this method, I effectively compressed 12-bytes `vec3` normal to 4-bytes `fp16vec2` normal with acceptable precision loss.
 
@@ -64,7 +66,6 @@ f16vec3 DecodeNormal(f16vec2 f)
 	return normalize(n);
 }
 ```
-![Visualization of octahedron encoding](https://www.jeremyong.com/images/diamond/octahedral.png)
 
 ### Tangent compression
 As well as normals, tangents have multiple ways to be quantized. One of the options was using "implicit tangents" - a single `float32` or `float16`, describing an angle around normal. With such method, decoding is done with _Rodrigues’ Rotation Formula_.
@@ -135,10 +136,11 @@ After compression against a grid with 0.001 step, our vertex lays perfectly on 6
 
 #### Avoiding geometry cracks
 Considering that my renderer is cluster-based and is using mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve it, I needed to quantize all vertices, lods (if using meshlet-level lods) and all spatial data in general, including meshlets (see below), against *the same grid*.
-#### Precision and bit size
-Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
 
 ![Geometry cracks](https://i.ibb.co/sQ3GW6T/image.png)
+
+#### Precision and bit size
+Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
 
 ### Encoding in meshlet-space
 To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us good 1-6 bits (3-5 in average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode vertex:
