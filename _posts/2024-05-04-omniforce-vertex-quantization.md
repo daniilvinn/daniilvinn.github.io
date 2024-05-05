@@ -34,7 +34,7 @@ To summarize:
 - Decoding kept simple, nearly free
 
 #### Encoding (C++, using GLM library for math):
-```cpp
+```c_cpp
 glm::vec2 OctahedronWrap(glm::vec2 v) {
 	glm::vec2 w = 1.0f - glm::abs(glm::vec2(v.y, v.x));
 	if (v.x < 0.0f) w.x = -w.x;
