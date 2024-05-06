@@ -70,9 +70,9 @@ f16vec3 DecodeNormal(f16vec2 f)
 ```
 
 ### Tangent compression
-As well as normals, tangents have multiple ways to be quantized. One of the options was using "implicit tangents" - a single `float32` or `float16`, describing an angle around normal. With such method, decoding is done with _Rodrigues’ Rotation Formula_.
+As well as normals, tangents have multiple ways to be quantized. One of the options was using a single `float32` or `float16`, describing an angle around normal. With such method, decoding is done with _Rodrigues’ Rotation Formula_.
 
-However, as I mentioned above - _very_ fast decoding time is one the biggest requirements. With the "implicit tangent" technique, I could desribe a tangent as an angle, encoded in 16-bit float, but decoding would involve transcendental GPU operations (sin/cos), which I wanted to avoid as much as possible. Also, considering that such method would only save 2 bytes per vertex compared to my implementation, I decided to go another way.
+However, as I mentioned above - _very_ fast decoding time is one the biggest requirements. Using this approach, I could desribe a tangent as an angle, encoded in 16-bit float, but decoding would involve transcendental GPU operations (sin/cos), which I wanted to avoid as much as possible. Also, considering that such method would only save 2 bytes per vertex compared to my implementation, I decided to go another way.
 
 Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, sign is just 2 values, meaning that it can be represented using a single bit. After a little research, I came up with a solution - encode that single bit into octahedron-encoded tangent. **Very important note**: encode bitangent sign bit *after* octahedron and fp16 compression, because if I do it vice-versa, the sign bit can be lost due to compression. I chose lowest bit of Y component - according to IEEE-754 float16 standard, it is lowest bit of mantissa, meaning that it has the least influence on final precision. After my tests, I ended up with approximately 0.03 precision loss for tangents.
 
@@ -294,6 +294,6 @@ This quantization system is definitely a win for my engine and almost perfectly 
 
 However, there still a space for improvements:
 - I assume that bit stream implementation can be optimized further. Nonetheless, I tried my best to squeeze the performance out of it
-- Since normals and tangents are unit vectors even after compression, instead of storing them in fp16 unfolded octahedron, I could extract 15 bit mantissa + 1 sign bit of each of them, effectively preserving much more precision. Yet I am not sure how complex would decoding be, so for now I left it as-is.
+- Since normals and tangents are unit vectors even after compression, instead of storing unfolded octahedron's "UV" in fp16 , I could extract 15 bit mantissa + 1 sign bit from each coordinate, effectively preserving much more precision. Yet I am not sure how complex would decoding be, so for now I left it as-is.
 
 Thanks for reading!
