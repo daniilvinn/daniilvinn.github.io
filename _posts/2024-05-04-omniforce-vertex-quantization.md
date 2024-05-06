@@ -271,6 +271,11 @@ uint BitStreamRead(ReadOnlyBitStream bitstream, uint num_bits, uint bit_offset) 
 vec3 DecodeVertex(const ivec3 encoded_vertex, int vertex_bitrate, const vec3 meshlet_center) {
 	return ldexp(vec3(encoded_vertex), ivec3(-vertex_bitrate)) + meshlet_center;
 }
+
+int RestoreSign(uint x, MeshletData meshlet_data) {
+	int bitmask = 1 << (meshlet_data.bitrate - 1);
+	return int((x ^ bitmask) - bitmask);
+}
 ```
 
 ## Performance tests
