@@ -139,7 +139,7 @@ After compression against a grid with step of 0.001, our vertex lays perfectly o
 ![grid visualization, post-compression vertex](https://i.ibb.co/NVWqgWj/Screenshot-12.png)
 
 #### Avoiding geometry cracks
-Considering that my renderer is cluster-based and uses mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve it, I needed to quantize all vertices, lods (if using meshlet-level lods), and all spatial data in general, including meshlets (see below), against *the same grid*.
+Considering that my renderer is cluster-based and uses mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve it, I needed to quantize all vertices, lods (if using meshlet-level lods), and all spatial data in general (for example, meshlets' centers), against *the same grid*.
 
 ![Geometry cracks](https://i.ibb.co/sQ3GW6T/image.png)
 
