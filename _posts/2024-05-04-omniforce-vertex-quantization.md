@@ -1,20 +1,20 @@
 # Vertex quantization in Omniforce Game Engine
 ## The problem
-While textures can be heavily mip-mapped and contain just enough data encoded in single pixel (especially with BC1/BC7 compression), meshes are a bit more complicated. To reduce VRAM bandwidth, we can use LODs. However, it is not the panacea - I still have *tons* of redundant data encoded in a single vertex. By "redundant" I mean either excessive data/precision (e.g. FP32-encoded normals) or some values / bits which don't affect on final mesh at all, for example: I have a mesh which is 10 units in size (10 floats). Nonetheless, a single 32-bit float can represent values far beyond 10, meaning that we store *redundant data*, which can be compressed away. 
+While textures can be heavily mipmapped and contain just enough data encoded in a single pixel (especially with BC1/BC7 compression), meshes are a bit more complicated. To reduce VRAM bandwidth, we can use LODs. However, it is not the panacea - I still have tons of redundant data encoded in a single vertex. By "redundant" I mean either excessive data/precision (e.g. FP32-encoded normals) or some values/bits that don't affect on final mesh at all, for example: I have a mesh that is 10 units in size (10 floats). Nonetheless, a single 32-bit float can represent values far beyond 10, meaning that we store redundant data, which can be compressed away.
 
-The more vertices in some particular mesh we have, the more we need to wait until it is transferred to GPU caches, effectively increasing frame time. Another thing worth to mention - the more bytes a single vertex takes, the less vertices we can fit in a single cache line / entire cache, meaning that we would need 1. more reads 2. more swaps in cache. If we are register-bound, compressing vertices can improve performance due to the fact that we have less data per vertex and we can fit more data in registers, especially with FP16 values.
+The more vertices in some particular mesh we have, the more we need to wait until it is transferred to GPU caches, effectively increasing frame time. Another thing worth to mention - the more bytes a single vertex takes, the fewer vertices we can fit in a single cache line / entire cache, meaning that we would need 1. more reads and 2. more swaps in cache. If we are register-bound, compressing vertices can improve performance due to the fact that we have less data per vertex and we can fit more data in registers, especially with FP16 values.
 
-Using NVIDIA NSight Graphics profiler, I figured out that even with BC7-compressed textures I still don't have enough L2 cache hit rates and VRAM usage could definitely be lower. On screenshot, it is visible that cache hits are 1. not consistent (maybe often cache swaps?) 2. are about than 60% in general, meaning that about half of the time data is not found in the cache:
+Using the NVIDIA NSight Graphics profiler, I figured out that even with BC7-compressed textures I still don't have enough L2 cache hit rates and VRAM usage could be lower. On the screenshot, it is visible that cache hits are 1. not consistent (maybe often cache swaps?) 2. are about 60% in general, meaning that about half of the time data is not found in the cache:
 ![no compression L2 cache hits](https://i.ibb.co/xJ9TF4N/Screenshot-8.png)
 
 ## Renderer design considerations
-From the very beginning of development of my engine's renderer, I wanted it to support highly detailed _meshes_. To make that possible, my renderer required a vertex compression system which not just quantizes vertex positions to 16-bit floats. I needed higher compression ratio and very fast, near-instant decoding algorithm alongside with minimal precision loss.
+From the very beginning of the development of my engine's renderer, I wanted it to support highly detailed _meshes_. To make that possible, my renderer required a vertex compression system that not just quantizes vertex positions to 16-bit floats. I needed a higher compression ratio and a very fast, near-instant decoding algorithm alongside with minimal precision loss.
 
-Another thing to consider is that my engine's renderer is built around mesh shaders. This is very important note, which will be used for position compression. On NVIDIA GPUs, FP16 and FP32 computing rates are the same starting from Ampere generation, however, I can benefit from it on Turing GPUs, where FP16 computing rate is doubled compared to FP32 - this is one more thing to consider when designing compression system.
+Another thing to consider is that my engine's renderer is built around mesh shaders. This is a very important note, which will be used for position compression. On NVIDIA GPUs, FP16 and FP32 computing rates are the same starting from Ampere generation, however, I can benefit from it on Turing GPUs, where the FP16 computing rate is doubled compared to FP32 - this is one more thing to consider when designing compression system.
 
 Meshes in my engine's target scenes can have more than 200k polygons - which effectively proves my statement above about compression system requirements. 
 
-To summarize, I can highlight these features which have to be present in quantization system:
+To summarize, I can highlight these features which have to be present in the quantization system:
 - High compression rate, more than constant 50%
 - Capability of runtime decoding
 - Nearly instant decoding time
@@ -22,11 +22,11 @@ To summarize, I can highlight these features which have to be present in quantiz
 
 ## Implementation, part 1. Attribute compression
 ### Normal compression
-For normal encoding, I chose good-old Octahedron-encoding method mentioned at [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they represent points on unit sphere. Sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`! For visualization, see photo below.
+For normal encoding, I chose the good-old Octahedron-encoding method mentioned on [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simply - normals are unit vectors, hence they represent points on the unit sphere. The sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`! For visualization, see the photo below.
 
 ![Visualization of octahedron encoding](https://www.jeremyong.com/images/diamond/octahedral.png)
 
-For further compression, I decided to compress `vec2` which was returned after Octahedron encoding to 16-bit float. It takes some good bit of precision, but considering that most of the materials use 8-bit normal maps - I think that final precision loss is acceptable - it varied around 0.015. Using this method, I effectively compressed 12-bytes `vec3` normal to 4-bytes `fp16vec2` normal with acceptable precision loss.
+For further compression, I decided to compress `vec2` which was returned after Octahedron encoding to 16-bit float. It takes some good bit of precision, but considering that most of the materials use 8-bit normal maps - I think that final precision loss is acceptable - it varied around 0.015. Using this method, I effectively compressed 12-byte `vec3` normal to 4-byte `fp16vec2` normal with acceptable precision loss.
 
 To summarize:
 - Use octahedron encoding with further compression to fp16
@@ -70,19 +70,19 @@ f16vec3 DecodeNormal(f16vec2 f)
 ```
 
 ### Tangent compression
-As well as normals, tangents have multiple ways to be quantized. One of the options was using a single `float32` or `float16`, describing an angle around normal. With such method, decoding is done with _Rodrigues’ Rotation Formula_.
+As well as normals, tangents have multiple ways to be quantized. One of the options was using a single `float32` or `float16`, describing an angle around normal. With such a method, decoding is done with _Rodrigues’ Rotation Formula_.
 
-However, as I mentioned above - _very_ fast decoding time is one the biggest requirements. Using this approach, I could desribe a tangent as an angle, encoded in 16-bit float, but decoding would involve transcendental GPU operations (sin/cos), which I wanted to avoid as much as possible. Also, considering that such method would only save 2 bytes per vertex compared to my implementation, I decided to go another way.
+However, as I mentioned above - a _very_ fast decoding time is one of the biggest requirements. Using this approach, I could describe a tangent as an angle, encoded in 16-bit float, but decoding would involve transcendental GPU operations (sin/cos), which I wanted to avoid as much as possible. Also, considering that such a method would only save 2 bytes per vertex compared to my implementation, I decided to go another way.
 
-Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, sign is just 2 values, meaning that it can be represented using a single bit. After a little research, I came up with a solution - encode that single bit into octahedron-encoded tangent. **Very important note**: encode bitangent sign bit *after* octahedron and fp16 compression, because if I do it vice-versa, the sign bit can be lost due to compression. I chose lowest bit of Y component - according to IEEE-754 float16 standard, it is lowest bit of mantissa, meaning that it has the least influence on final precision. After my tests, I ended up with approximately 0.03 precision loss for tangents.
+Tangents are regular unit vectors, as well as normal, which means that we can use the same encoding algorithm - Octahedron -> fp16! However, things get a little bit trickier when we also need to encode _bitangent sign_. Thankfully, the sign is just 2 values, meaning that it can be represented using a single bit. After a little research, I came up with a solution - encode that single bit into an octahedron-encoded tangent. **Very important note**: encode bitangent sign bit *after* octahedron and fp16 compression, because if I do it vice-versa, the sign bit can be lost due to compression. I chose the lowest bit of the Y component - according to the IEEE-754 float16 standard, it is the lowest bit of mantissa, meaning that it has the least influence on final precision. After my tests, I ended up with approximately 0.03 precision loss for tangents.
 
 Decoding is fairly simple - just use the same method of decoding as we used for normals with one little difference - extract sign bit before decoding using this snippet of code: `float16 sign = float16BitsToUint16(tangent.y) & 1us ? 1.0hf : -1.0hf`
 
 To summarize:
 - Tangents are octahedron-encoded with further compression to fp16
-- Bitangent sign bit is copied to Y component's lowest bit
+- Bitangent sign bit is copied to the Y component's lowest bit
 - Precision loss is approximately 0.03
-- Decoding is as simple as normal decoding with extra step to extract sign bit
+- Decoding is as simple as normal decoding with an extra step to extract the sign bit
 
 #### Encoding code (C++)
 
@@ -121,61 +121,61 @@ Texture coordinates are simply compressed to fp16. However, it may lead to some 
 ## Implementation, part 2. Vertex position compression
 Compared to attributes, vertex compression has much more space for creativity. When I was looking through ["Deep dive into Nanite Virtualized Geometry"](https://www.youtube.com/watch?v=eviSykqSUUw&t=3606s&ab_channel=SIGGRAPHAdvancesinReal-TimeRendering) by [Brian Karis](https://twitter.com/briankaris?lang=en), I was inspired by their vertex compression system, which is where I got the idea for my own implementation. 
 
-Why not naive fp16 compression? The answer is simple - it doesn't suit _almost any_ of my requirements: vertex size is still comparably big (16 bits per channel) and it has large error with big meshes. I needed another, better way for vertex position compression.
+Why not naive fp16 compression? The answer is simple - it doesn't suit _almost any_ of my requirements: vertex size is still comparably big (16 bits per channel) and it has large errors with big meshes. I needed another, better way for vertex position compression.
 
 When I was implementing my system, I kept in mind three factors:
 - My renderer is cluster-based
-- Float32 and float16 can represent values far beyond mesh AABB, which is reduntant and only introduces additional "worthless" bits
-- Do I really need byte aligned data-structures? (spoiler: no)
+- Float32 and float16 can represent values far beyond mesh AABB, which is redundant and only introduces additional "worthless" bits
+- Do I really need byte-aligned aligned data structures? (spoiler: no)
 
 ### Grid quantization
 #### Overview
-Vertex quantization is done using **uniform grid**, where each vertex gets snapped to it. Grid step is an option - it can be set to a value in range of 4 to 16, which means that grid step varies from `1 / pow(2, 4)` to `1 / pow(2, 16)`. Compression is done with this code: `round(x * pow(2, grid_precision))`, which returns us a signed integer representing grid step count (essentially, a compressed value). See the photos below for visualization of quantization process.
+Vertex quantization is done using a **uniform grid**, where each vertex gets snapped to it. Grid step is an option - it can be set to a value in the range of 4 to 16, which means that grid step varies from `1 / pow(2, 4)` to `1 / pow(2, 16)`. Compression is done with this code: `round(x * pow(2, grid_precision))`, which returns us a signed integer representing the grid step count (essentially, a compressed value). See the photos below for a visualization of the quantization process.
 
-Say, we have a grid with 0.001 step. Outlined range is redundant precision which should me compressed away by *snapping to the grid*. On next photo, we have a 1D vertex laying at 6.39342:
+Say, we have a grid with 0.001 step. Outlined range is redundant precision which should be compressed away by *snapping to the grid*. In next photo, we have a 1D vertex laying at 6.39342:
 ![grid visualization, pre-compression vertex](https://i.ibb.co/fxLzNh0/Screenshot-11.png)
 
-After compression against a grid with 0.001 step, our vertex lays perfectly on 6.393, containing no excessive precision which requires additional bits for encoding:
+After compression against a grid with step of 0.001, our vertex lays perfectly on 6.393, containing no excessive precision which requires additional bits for encoding:
 ![grid visualization, post-compression vertex](https://i.ibb.co/NVWqgWj/Screenshot-12.png)
 
 #### Avoiding geometry cracks
-Considering that my renderer is cluster-based and is using mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve it, I needed to quantize all vertices, lods (if using meshlet-level lods) and all spatial data in general, including meshlets (see below), against *the same grid*.
+Considering that my renderer is cluster-based and uses mesh shading technology, my mesh is split up into "meshlets". Compressing them naively may introduce *cracks* between them (see a photo below), which is unacceptable. To solve it, I needed to quantize all vertices, lods (if using meshlet-level lods), and all spatial data in general, including meshlets (see below), against *the same grid*.
 
 ![Geometry cracks](https://i.ibb.co/sQ3GW6T/image.png)
 
 #### Precision and bit size
-Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate final bit size, I use this (preudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get final bit size of 1D vertex at 5.0 quantized against 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
+Using this method, precision is kept very high. Maximum error equals to grid step size divided by 2, due to rounding. To calculate the final bit size, I use this (pseudo-) code: `ceil(log2(round(f * pow(2, precision)))`. For example, if I want to get the final bit size of 1D vertex at 5.0 quantized against an 8-bit grid, I do this: `ceil(log2(round(5.0 * pow(2, 8)))`, which returns 11.
 
 ### Encoding in meshlet-space
-To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us good 1-6 bits (3-5 in average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode vertex:
+To compress vertices even further, I encode them in meshlet-space, instead of local space. It can save us a good 1-6 bits (3-5 on average) per vertex channel, depending on meshlet spatial size. Now, this is how I encode the vertex:
 `round((f - meshlet-center) * pow(2, precision))`.
 
-We can calculate new vertex bit size using this technique: let's say, we still have 1D vertex laying at 5.0 and now it belongs to a meshlet with center at 4.2. Now, to calculate new bit size, I use this: `ceil(log2(round((5.0 - 4.2) * pow(2, 8)))`, and it returns us 8 - which is 3 bits less than previous result, meaning that we saved additional 3 bits *per channel*.
+We can calculate new vertex bit size using this technique: let's say, we still have a 1D vertex laying at 5.0 and now it belongs to a meshlet with center at 4.2. Now, to calculate the new bit size, I use this: `ceil(log2(round((5.0 - 4.2) * pow(2, 8)))`, and it returns us 8 - which is 3 bits less than the previous result, meaning that we saved additional 3 bits *per channel*.
 
 Important note: meshlet centers **must** be quantized as well in order to avoid geometry cracks between meshlets.
 
 ### Bit stream
-All this compression and 3-5 bits savings don't make any sense if I still have byte-aligned data structures. I needed a data structure which is not aligned to a byte - I needed a bit stream.
+All this compression and 3-5 bits savings don't make any sense if I still have byte-aligned data structures. I needed a data structure that is not aligned to a byte - I needed a bit stream.
 
-Using a bit stream instead of array of float32/float16/uint/int, I can compress vertices much effectively, because not a single bit will be wasted: data is packed as much as possible. This technique turned out to work really well on GPU - I simply use GPU bit stream reader to fetch vertex data. By providing an offset *in bits* and num of bits to read, the reader returns us a `uint` representing encoded value.
+Using a bit stream instead of an array of float32/float16/uint/int, I can compress vertices much more effectively, because not a single bit will be wasted: data is packed as much as possible. This technique turned out to work really well on GPU - I simply used a GPU bitstream reader to fetch vertex data. By providing an offset *in bits* and num of bits to read, the reader returns us a `uint` representing encoded value.
 
-Considering that I deal with non-byte-aligned data, I can't just load some value from bit stream and expect it to have sign. To solve this, I used a trick called "bit extend", which expands sign bit, effectively restoring sign of the value.
+Considering that I deal with non-byte-aligned data, I can't just load some value from the bit stream and expect it to have a sign. To solve this, I used a trick called "bit extend", which expands the sign bit, effectively restoring the sign of the value.
 
 ### Per-meshlet bitrate
-So far, I had uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation of meshlet-level lods, each consecutive LOD will have spatially bigger meshlets, which will increase bitrate for all previous LODs' meshlets, effectively eliminating the entire point of encoding in meshlet-space (due to the fact that LODmax meshlet(s) may be as big as source mesh).
+So far, I had a uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation of meshlet-level lods, each consecutive LOD will have spatially bigger meshlets, which will increase bitrate for all previous LODs' meshlets, effectively eliminating the entire point of encoding in meshlet-space (due to the fact that LODmax meshlet(s) may be as big as source mesh).
 
-To solve this problem, I decided to have variable per-meshlet bitrate. Now, each each meshlet has its own bitrate which equals to worst-case bitrate among meshlet vertices. It requires storing bitrate of meshlet data, however, it is not an issue, since it can be easily packed in a single `uint` variable with `vertex_count` and `triangle_count` values.
+To solve this problem, I decided to have a variable per-meshlet bitrate. Now, each each meshlet has its own bitrate which equals to worst-case bitrate among meshlet vertices. It requires storing the bitrate of meshlet data, however, it is not an issue, since it can be easily packed in a single `uint` variable with `vertex_count` and `triangle_count` values.
 
 ### Decoding 
 As mentioned in previous sections, I wanted decoding to be as fast as possible.
-To decode, I needed to convert a signed encoded vertex to a float, divide it by `pow(2, precision)` and add meshlet center which vertex belongs to in order to transform a vertex from meshlet-space to local (mesh) space.
-In my implementation, I use GLSL built-in ldexp() function for division of a float by POT - it basically adds a signed integer to float’s exponent, effectively multiplying / dividing it by POT value.
+To decode, I needed to convert a signed encoded vertex to a float, divide it by `pow(2, precision)`, and add the meshlet center to which the vertex belongs to transform a vertex from meshlet-space to local (mesh) space.
+In my implementation, I use the GLSL built-in ldexp() function for the division of a float by POT - it basically adds a signed integer to the float’s exponent, effectively multiplying/dividing it by POT value.
 
 ### Compression results
 Considering that compression is done based on per-meshlet bitrate, it highly depends on such variables
-as: parameters passed to mesh clusterizer, desired precision and overall mesh spatial size.
+as: parameters passed to mesh clusterizer, desired precision, and overall mesh spatial size.
 
-For test, I quantized [this pistol model](https://sketchfab.com/3d-models/flintlock-pistol-6c3788f102474476b57a8d9b7f4ee9e8) using 8-bit grid. Pistol is ~24 units (floats) in size. Results are:
+For the test, I quantized [this pistol model](https://sketchfab.com/3d-models/flintlock-pistol-6c3788f102474476b57a8d9b7f4ee9e8) using an 8-bit grid. Pistol is ~24 units (floats) in size. Results are:
 - Uncompressed size in bytes: 335616
 - Compressed size in bytes: 87808
 - Rate: 3.82
@@ -274,7 +274,7 @@ vec3 DecodeVertex(const ivec3 encoded_vertex, int vertex_bitrate, const vec3 mes
 ```
 
 ## Performance tests
-Final stage of my journey with quantization is profiling. With NVIDIA NSight Graphics, I managed to make 2 captures: with and without compression, each of them captured 3 frames using multi-pass metrics. Inputs were completely identical: scene and its TRS is the same (Amazon Lumberyard Bistro Exterior), with identical camera settings and full unlit scene.
+The final stage of my journey with quantization is profiling. With NVIDIA NSight Graphics, I managed to make 2 captures: with and without compression, each of them captured 3 frames using multi-pass metrics. Inputs were completely identical: the scene and its TRS are the same (Amazon Lumberyard Bistro Exterior), with identical camera settings and a full unlit scene.
 
 Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driver. Metrics are compared to no quantization capture, not SOL. Results are:
 - +25% L2 Read Hit Rate from L1
@@ -284,16 +284,16 @@ Captures were made on NVIDIA GeForce GTX 1660 Ti GPU with Game Ready 552.12 driv
 - Slightly increased SM Instruction throughputs (~15-30%)
 - -25% frame time: 2.1ms, down from 2.8ms.
 
-Profiler screenshots (first capture is no compression, second is full compression):
+Profiler screenshots (the first capture is no compression, the second is full compression):
 ![nsight L2 cache hits rates screenshot](https://i.ibb.co/xGnS91S/Screenshot-5.png)
 ![second screenshot of profiling metrics](https://i.ibb.co/Lpbyc1h/Screenshot-6.png)
 ![third screenshot of profiling metrics](https://i.ibb.co/zPDrNY3/Screenshot-7.png)
 
 ## Conclusion
-This quantization system is definitely a win for my engine and almost perfectly fits my needs: high compression rate, fast decode and it works well with meshlet-level LODs. It impressively decreased memory footprint, increased cache hit rates and even lowered my frame time by 25% in average.
+This quantization system is definitely a win for my engine and almost perfectly fits my needs: high compression rate, fast decode and it works well with meshlet-level LODs. It impressively decreased my memory footprint, increased cache hit rates, and even lowered my frame time by 25% on average.
 
-However, there still a space for improvements:
-- I assume that bit stream implementation can be optimized further. Nonetheless, I tried my best to squeeze the performance out of it
-- Since normals and tangents are unit vectors even after compression, instead of storing unfolded octahedron's "UV" in fp16 , I could extract 15 bit mantissa + 1 sign bit from each coordinate, effectively preserving much more precision. Yet I am not sure how complex would decoding be, so for now I left it as-is.
+However, there is still a space for improvements:
+- I assume that bitstream implementation can be optimized further. Nonetheless, I tried my best to squeeze the performance out of it
+- Since normals and tangents are unit vectors even after compression, instead of storing unfolded octahedron's "UV" in fp16 , I could extract 15-bit mantissa + 1 sign bit from each coordinate, effectively preserving much more precision. Yet I am not sure how complex would decoding be, so for now I left it as-is.
 
 Thanks for reading!
