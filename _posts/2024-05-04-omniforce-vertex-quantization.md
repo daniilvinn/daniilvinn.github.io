@@ -159,7 +159,7 @@ All this compression and 3-5 bits savings don't make any sense if I still have b
 
 Using a bit stream instead of an array of float32/float16/uint/int, I can compress vertices much more effectively, because not a single bit will be wasted: data is packed as much as possible. This technique turned out to work really well on GPU - I simply used a GPU bitstream reader to fetch vertex data. By providing an offset *in bits* and num of bits to read, the reader returns us a `uint` representing encoded value.
 
-Considering that I deal with non-byte-aligned data, I can't just load some value from the bit stream and expect it to have a sign. To solve this, I used a trick called "bit extend", which expands the sign bit, effectively restoring the sign of the value.
+Considering that I deal with non-byte-aligned data, I can't just load some value from the bit stream and expect it to have a sign. To solve this, I used a trick called "bit extend" mentioned [here](https://graphics.stanford.edu/~seander/bithacks.html#VariableSignExtend), which expands the sign bit, effectively restoring the sign of the value.
 
 ### Per-meshlet bitrate
 So far, I had a uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation of meshlet-level lods, each consecutive LOD will have spatially bigger meshlets, which will increase bitrate for all previous LODs' meshlets, effectively eliminating the entire point of encoding in meshlet-space (due to the fact that LODmax meshlet(s) may be as big as source mesh).
