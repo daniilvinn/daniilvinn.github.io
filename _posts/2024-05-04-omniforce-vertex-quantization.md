@@ -22,7 +22,7 @@ To summarize, I can highlight these features which have to be present in the qua
 
 ## Implementation, part 1. Attribute compression
 ### Normal compression
-For normal encoding, I chose the good-old Octahedron-encoding method mentioned on [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simply - normals are unit vectors, hence they represent points on the unit sphere. The sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`! For visualization, see the photo below.
+For normal encoding, I chose the good-old Octahedron-encoding method mentioned on [this page](https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/) by [Krzysztof Narkowicz](https://twitter.com/knarkowicz) which turned out to be the best option among others. It works fairly simple - normals are unit vectors, hence they represent points on the unit sphere. The sphere can be divided into 8 "sections", effectively forming an octahedron, which then gets unfolded to a 2D plane, meaning that we can use `vec2` normals instead of `vec3`! For visualization, see the photo below.
 
 ![Visualization of octahedron encoding](https://www.jeremyong.com/images/diamond/octahedral.png)
 
@@ -126,7 +126,7 @@ Why not naive fp16 compression? The answer is simple - it doesn't suit _almost a
 When I was implementing my system, I kept in mind three factors:
 - My renderer is cluster-based
 - Float32 and float16 can represent values far beyond mesh AABB, which is redundant and only introduces additional "worthless" bits
-- Do I really need byte-aligned aligned data structures? (spoiler: no)
+- Do I really need byte-aligned data structures? (spoiler: no)
 
 ### Grid quantization
 #### Overview
