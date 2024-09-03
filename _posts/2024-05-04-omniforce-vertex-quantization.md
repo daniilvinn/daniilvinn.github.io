@@ -162,9 +162,9 @@ Using a bit stream instead of an array of float32/float16/uint/int, I can compre
 Considering that I deal with non-byte-aligned data, I can't just load some value from the bit stream and expect it to have a sign. To solve this, I used a trick called "bit extend" mentioned [here](https://graphics.stanford.edu/~seander/bithacks.html#VariableSignExtend), which expands the sign bit, effectively restoring the sign of the value.
 
 ### Per-meshlet bitrate
-So far, I had a uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' Nanite implementation of meshlet-level lods, each consecutive LOD will have spatially bigger meshlets, which will increase bitrate for all previous LODs' meshlets, effectively eliminating the entire point of encoding in meshlet-space (due to the fact that LODmax meshlet(s) may be as big as source mesh).
+So far, I had a uniform bitrate for each vertex in every meshlet across all LODs, which worked well. However, this quantization system is designed for use in pair with per-meshlet LODs. Using Epic Games' virtual geometry technology for meshlet-level levels of detail, each consecutive LOD will have spatially bigger meshlets, which will increase bitrate for all previous LODs' meshlets, effectively eliminating the entire point of encoding in meshlet-space (due to the fact that LODmax meshlet(s) may be as big as source mesh).
 
-To solve this problem, I decided to have a variable per-meshlet bitrate. Now, each each meshlet has its own bitrate which equals to worst-case bitrate among meshlet vertices. It requires storing the bitrate of meshlet data, however, it is not an issue, since it can be easily packed in a single `uint` variable with `vertex_count` and `triangle_count` values.
+To solve this problem, I decided to have a variable per-meshlet bitrate. Now, each meshlet has its own bitrate which equals to worst-case bitrate among meshlet vertices. It requires storing the bitrate of meshlet data, however, it is not an issue, since it can be easily packed in a single `uint` variable with `vertex_count` and `triangle_count` values.
 
 ### Decoding 
 As mentioned in previous sections, I wanted decoding to be as fast as possible.
