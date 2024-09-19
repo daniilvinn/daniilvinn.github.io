@@ -69,6 +69,11 @@ Now we need to understand what the "projected sphere" is. When testing a LOD, we
 
 Important note: whenever a group with just enough error is found, we stop its subtree traversal because all of its children's LOD tests will fail due to the fact that the children and children's children will be too detailed to be rendered).
 
+### Streaming
+Now, when we have per-cluster LODs that form a hierarchy and understand how to render them, we get back to the question of memory. We can stream in and out *individual clusters*, keeping only needed resources and clusters resident. During the rendering, we request unloaded data on-demand. Then, the CPU loads needed resources and "lets GPU know" that resources are loaded so it use them in render.
+
+This entire system is aimed at rendering meshes with the *higest quality possible* with high performance, so if a cluster is not resident, then we render its children that have higher quality to maintain graphics fidelity. 
+
 ## Conclusion
 Let's sum up all the steps starting from mesh build to getting actual pixels on screen.
 
