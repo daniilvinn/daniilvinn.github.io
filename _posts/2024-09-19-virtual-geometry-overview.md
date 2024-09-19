@@ -57,6 +57,8 @@ Due to the fact that merged groups are split back, we still cannot render all cl
 
 **Note**: the error **must** be in world-space in order to correctly LOD test groups.
 
+![The DAG cut](https://github.com/user-attachments/assets/0601934c-20cc-4e57-b02a-0904c1f3f3a0)
+
 ### How to render
 After mesh build we end up with a hierarchy of clusters, where parents are simplified versions of their children. The traversal always starts from root (least detailed LOD), assuming that most meshes will be rendered in low quality. During the build, each groups "gets" a bounding sphere which encloses all vertices inside the group and the simplification error **and** its parent bounding sphere and error to allow entirely local (we only need group X data to test if it fits), parallel LOD selection - this is one of the most important parts.
 
@@ -66,3 +68,4 @@ We only render a group if it is detailed enough to not produce any perceptible e
 Now we need to understand what is "projected sphere". When testing a LOD, we form a sphere with center at group's bounding sphere and radius that equals to the error, then we project it to the screen with current view parameters and get size of the sphere in pixels - a metric used in LOD testing.
 
 Important note: whenever a group with just enough error is found, we stop its subtree traversal because all of its children LOD tests will fail due to the fact that the children and children's children will be too detailed to be rendered).
+
