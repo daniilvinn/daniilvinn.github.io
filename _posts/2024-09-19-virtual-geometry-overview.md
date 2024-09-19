@@ -36,7 +36,7 @@ Let's revise all requirements for the system:
 1. Need clusterized meshes to allow for high granularity visibility culling
 2. More importantly - need per-cluster levels of detail
 3. Can not accept geometrical cracks - need to lock edges
-4. Can not afford locking *all* edges - leads to extreme amount of locked edges
+4. Can not afford locking *all* edges - leads to extreme amount of persistently locked vertices
 
 The #4 statement is the most important. The system can not afford locking *all edges*, but can afford locking *part* of the edges. So how to do we evaluate which vertices need to lock?
 
