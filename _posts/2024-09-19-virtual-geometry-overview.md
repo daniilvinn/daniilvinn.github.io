@@ -43,8 +43,26 @@ The #4 statement is the most important. The system can not afford locking *all e
 ### Grouping clusters
 If we can't "communicate" between *independent* clusters, so they make the same LOD decision, we *force* them to do so by grouping them together, making them no longer independent.
 
-We group clusters by some factor (see below), then merge them together into one, lock edges, simplify and split back to clusters. This way can group 4 clusters together, merge them, simplify, but get 2 clusters as output *while still preserving the group boundaries*. See the photo below that shows how it looks like, on the photo, the group above has 4 clusters, 4 triangles each, and then it gets simplified and split back to two meshlets that *preserve the boundaries*.
+We group clusters by some factor (see below), then merge them together into one, lock edges, simplify and split back to clusters. This way can group 4 clusters together, merge them, simplify, but get 2 clusters as output *while still preserving the group boundaries*. See the photo below that shows how it looks like. On the photo, the group above has 4 clusters, 4 triangles each, and then it gets simplified and split back to two meshlets that *preserve the boundaries*.
 ![Showcase of "Group, merge, lock, simplify, split back" process](https://github.com/user-attachments/assets/e4f35374-514f-4fdb-b344-6f62ee1afdb1)
 
 "The grouping factor" mention above is number of shared edges between clusters. We want to simplify as much as possible to reach 1/2 index count, therefore we want to lock as small amount of edges as possible. All these tips mean that we need to group those clusters which have the most shared edges, because those edges will not be locked. Grouping is a common graph partitioning problem, where graph vertices (nodes) are clusters, edges are the fact that two clusters are connected and edge weights are number of actual shared mesh edges between two clusters.
 
+After splitting groups back, we add it to a cluster pool from which new clusters are generated. The pool is cleared after every simplification pass.
+
+After all that, we will end up with a DAG (Directed Acyclic Graph) or basically a hierarchy of clusters, where root of the graph is lowest detail level with ideally 1 cluster. The next question is: "how do we traverse, select and render those clusters?"
+
+### The hierarchy
+Due to the fact that merged groups are split back, we still cannot render all clusters independently - we can only render entire groups to avoid cluster overlap and / or missing clusters that will lead to holes in the mesh. It may sound bad, but groups are really small and their cluster count depends on an implementation and varies from 4 to 8. Average high-density mesh may have thousands of clusters at LOD 0, so we have ~1-3 thousands of groups to render at LOD 0. So, if we LOD test cluster *X* and it fails (too detailed / too low detailed), we need to test all of its children groups and repeat it until we find a group that perfectly fits. What "fits" and what doesn't will be discussed below. You could also think that if we can only render entire groups, then we do not need to test all meshlets individually - we only need to test groups. The "selection" of groups form a *DAG cut*. See the photo below that shows how it looks like.
+
+**Note**: the error **must** be in world-space in order to correctly LOD test groups.
+
+### How to render
+After mesh build we end up with a hierarchy of clusters, where parents are simplified versions of their children. The traversal always starts from root (least detailed LOD), assuming that most meshes will be rendered in low quality. During the build, each groups "gets" a bounding sphere which encloses all vertices inside the group and the simplification error **and** its parent bounding sphere and error to allow entirely local (we only need group X data to test if it fits), parallel LOD selection - this is one of the most important parts.
+
+### LOD test
+We only render a group if it is detailed enough to not produce any perceptible error **and** its parent is simplified too much. The error is perceptible only if its projected sphere's radius is equal or more than 1 pixel. If it less than 1 pixel, then the error is imperceptible.
+
+Now we need to understand what is "projected sphere". When testing a LOD, we form a sphere with center at group's bounding sphere and radius that equals to the error, then we project it to the screen with current view parameters and get size of the sphere in pixels - a metric used in LOD testing.
+
+Important note: whenever a group with just enough error is found, we stop its subtree traversal because all of its children LOD tests will fail due to the fact that the children and children's children will be too detailed to be rendered).
