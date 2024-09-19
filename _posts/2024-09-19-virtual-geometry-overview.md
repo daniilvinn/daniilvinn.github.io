@@ -94,7 +94,7 @@ That's all the building blocks we need to build such mesh rendering pipeline. In
 ## Special thanks
 This entire system is pretty much Nanite rendering pipeline from Unreal Engine 5. Considering this fact, I would like to thank !(Brian Karis)[https://x.com/briankaris] and the entire Nanite and Unreal Engine team, without them it wouldn't be possible, at least for me, at least for now.
 
-It is also worth to mention the [SIGGRAPH "Deep Dive into Nanite talk by Brian Karis"](https://advances.realtimerendering.com/s2021/Karis_Nanite_SIGGRAPH_Advances_2021_final.pdf), where this entire system (and more) is explained in details.
+It is also worth to mention the [SIGGRAPH "Deep Dive into Nanite talk by Brian Karis"](https://advances.realtimerendering.com/s2021/Karis_Nanite_SIGGRAPH_Advances_2021_final.pdf), where this entire system (and more) is explained in details. This is the presentation I took images from.
 
 And also, special thanks to [LVSTRI](https://github.com/LVSTRI) and [jglrxavpok](https://mastodon.gamedev.place/@jglrxavpok) for support and help during the development of this system.
 
