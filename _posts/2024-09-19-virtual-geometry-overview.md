@@ -69,3 +69,31 @@ Now we need to understand what is "projected sphere". When testing a LOD, we for
 
 Important note: whenever a group with just enough error is found, we stop its subtree traversal because all of its children LOD tests will fail due to the fact that the children and children's children will be too detailed to be rendered).
 
+## Conclusion
+Let's sum up all steps starting from mesh build to getting actual pixels on screen.
+
+The mesh building process:
+1. Split initial mesh to clusters
+2. Add clusters to the pool
+3. Group clusters based on connectivity
+4. Merge each individual group's clusters into one index buffer
+5. Simplify
+6. Repeat until 1 cluster is left
+
+After it is done, we have a hierarchy of clusters, where parent are simplified version of its children.
+
+The rendering process:
+1. Start hierarchy traversal from the root
+2. Project self group error sphere to the screen
+3. Project parent group error sphere to the screen
+4. Render if self error is small enough and parent error is too big
+5. Stop subtree traversal
+
+That's all the building blocks we need to build such mesh rendering pipeline. In the next parts of this series I will explain how to implement it from the very beginning to getting actual pixels on screen.
+
+## Special thanks
+This entire system is pretty much Nanite rendering pipeline from Unreal Engine 5. Considering this fact, I would like to thank !(Brian Karis)[https://x.com/briankaris] and the entire Nanite and Unreal Engine team, without them it wouldn't be possible, at least for me, at least for now.
+
+I would also like to thank !(LVSTRI)[https://github.com/LVSTRI] and !(jglrxavpok)[https://mastodon.gamedev.place/@jglrxavpok] for support and help during the development of this system.
+
+Thanks for reading!
