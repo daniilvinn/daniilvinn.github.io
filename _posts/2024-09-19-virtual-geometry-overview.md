@@ -92,7 +92,7 @@ The rendering process:
 That's all the building blocks we need to build such a mesh rendering pipeline. In the next parts of this series, I will explain how to implement it from the very beginning to getting actual pixels on screen.
 
 ## Special thanks
-This entire system is pretty much a Nanite rendering pipeline from Unreal Engine 5. Considering this fact, I would like to thank ![Brian Karis](https://x.com/briankaris) and the entire Nanite and Unreal Engine team, without them it wouldn't be possible, at least for me, at least for now.
+This entire system is pretty much a Nanite rendering pipeline from Unreal Engine 5. Considering this fact, I would like to thank [Brian Karis](https://x.com/briankaris) and the entire Nanite and Unreal Engine team, without them it wouldn't be possible, at least for me, at least for now.
 
 It is also worth mentioning the [SIGGRAPH "Deep Dive into Nanite talk by Brian Karis"](https://advances.realtimerendering.com/s2021/Karis_Nanite_SIGGRAPH_Advances_2021_final.pdf), where this entire system (and more) is explained in details. This is the presentation I took images from.
 
