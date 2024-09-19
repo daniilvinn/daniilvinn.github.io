@@ -57,7 +57,7 @@ Due to the fact that merged groups are split back, we still cannot render all cl
 
 **Note**: the error **must** be in world-space in order to correctly LOD test groups.
 
-![The DAG cut](https://github.com/user-attachments/assets/0601934c-20cc-4e57-b02a-0904c1f3f3a0)
+![The DAG cut](https://github.com/user-attachments/assets/ed06c469-3371-43ed-9db9-43e0699bccc5)
 
 ### How to render
 After mesh build, we end up with a hierarchy of clusters, where parents are simplified versions of their children. The traversal always starts from the root (least detailed LOD), assuming that most meshes will be rendered in low quality. During the build, each group "gets" a bounding sphere that encloses all vertices inside the group and the simplification error **and** its parent bounding sphere and error to allow entirely local (we only need group X data to test if it fits), parallel LOD selection - this is one of the most important parts.
