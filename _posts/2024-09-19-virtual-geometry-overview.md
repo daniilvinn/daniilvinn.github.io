@@ -32,13 +32,13 @@ To sum up:
 ### Summarization
 Even considering all the problems above, **the problem is solvable** - I wouldn't write this post if it wasn't possible.
 
-Let's all requirements for the system:
+Let's revise all requirements for the system:
 1. Need clusterized meshes to allow for high granularity visibility culling
 2. More importantly - need per-cluster levels of detail
 3. Can not accept geometrical cracks - need to lock edges
 4. Can not afford locking *all* edges - leads to extreme amount of locked edges
 
-The #4 statement is the most important. The system can not afford locking *all edges*, but can afford locking *some part* of the edges. So how to do we evaluate which vertices need to lock?
+The #4 statement is the most important. The system can not afford locking *all edges*, but can afford locking *part* of the edges. So how to do we evaluate which vertices need to lock?
 
 ### Grouping clusters
 If we can't "communicate" between *independent* clusters, so they make the same LOD decision, we *force* them to do so by grouping them together, making them no longer independent.
