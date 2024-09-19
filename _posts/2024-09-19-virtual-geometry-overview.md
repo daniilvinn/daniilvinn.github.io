@@ -44,6 +44,7 @@ The #4 statement is the most important. The system can not afford locking *all e
 If we can't "communicate" between *independent* clusters, so they make the same LOD decision, we *force* them to do so by grouping them together, making them no longer independent.
 
 We group clusters by some factor (see below), then merge them together into one, lock edges, simplify and split back to clusters. This way can group 4 clusters together, merge them, simplify, but get 2 clusters as output *while still preserving the group boundaries*. See the photo below that shows how it looks like, on the photo, the group above has 4 clusters, 4 triangles each, and then it gets simplified and split back to two meshlets that *preserve the boundaries*.
-![Showcase of "Group, merge, lock, simplify, split back" process](https://github.com/user-attachments/assets/ce824f28-3cfa-46b5-8412-85bbb474c42a)
+![Showcase of "Group, merge, lock, simplify, split back" process](https://github.com/user-attachments/assets/e4f35374-514f-4fdb-b344-6f62ee1afdb1)
 
 "The grouping factor" mention above is number of shared edges between clusters. We want to simplify as much as possible to reach 1/2 index count, therefore we want to lock as small amount of edges as possible. All these tips mean that we need to group those clusters which have the most shared edges, because those edges will not be locked. Grouping is a common graph partitioning problem, where graph vertices (nodes) are clusters, edges are the fact that two clusters are connected and edge weights are number of actual shared mesh edges between two clusters.
+
