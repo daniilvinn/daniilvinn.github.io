@@ -1,4 +1,4 @@
-# Rendering of high density geometry in Omniforce Engine, part #1
+# High density geometry rendering in Omniforce Engine, part #1
 ## The problem
 The computer graphics industry has used the discrete levels of detail (LOD) for meshes in real-time rendering during its entire lifetime. However, it may not be as efficient as we would like it to be.
 
