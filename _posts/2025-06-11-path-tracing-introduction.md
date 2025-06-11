@@ -23,7 +23,7 @@ L_o(x, \omega_o) = L_e(x, \omega_o) + \int_{\Omega} f_r(x, \omega_i, \omega_o) \
 $$
 
 Let's briefly walk through all of its terms:
-- $L_e(x, \omega_o)$ - emitted radiance from a point
+- $$L_e(x, \omega_o)$$ - emitted radiance from a point
 - $f_r(x, \omega_i, \omega_o)$ - BRDF for a given point
 - $L_i(x, \omega_i)$ - incoming radiance
 - $\omega_i \cdot n$ - dot product between a surface normal and incoming direction
