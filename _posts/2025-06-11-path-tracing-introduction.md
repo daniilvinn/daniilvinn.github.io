@@ -24,13 +24,13 @@ $$
 
 Let's briefly walk through all of its terms:
 - $$L_e(x, \omega_o)$$ - emitted radiance from a point
-- $f_r(x, \omega_i, \omega_o)$ - BRDF for a given point
-- $L_i(x, \omega_i)$ - incoming radiance
-- $\omega_i \cdot n$ - dot product between a surface normal and incoming direction
+- $$f_r(x, \omega_i, \omega_o)$$ - BRDF for a given point
+- $$L_i(x, \omega_i)$$ - incoming radiance
+- $$\omega_i \cdot n$$ - dot product between a surface normal and incoming direction
 
 Seems simple enough, right?
 
-It would be simple and PBR rendering could be much easier topic, if not this: $\int_{\Omega}$ . What does it mean for us, is that all radiance leaving a point equals to emitted radiance **and** an **integral** over all directions on the hemisphere above the point.
+It would be simple and PBR rendering could be much easier topic, if not this: $$\int_{\Omega}$$ . What does it mean for us, is that all radiance leaving a point equals to emitted radiance **and** an **integral** over all directions on the hemisphere above the point.
 
 So, now it doesn't seem to be that easy to solve, especially that we literally cannot solve it analytically - thus, we can't get the precise result of that equation for most of the cases.
 
@@ -63,18 +63,18 @@ Instead of solving the integral analytically − so taking into account practica
 
 In the case of the **light transport equation**, the integral over the hemisphere can be written as:
 $$\int_{\Omega} f_r(x, \omega_i, \omega_o) \, L_i(x, \omega_i) \, (\omega_i \cdot n) \, d\omega_i$$
-To approximate this integral using a **Riemann sum**, we would discretize the hemisphere  $\Omega$  into $N$ uniformly spaced directions $\omega_i^{(k)}$, and compute:
+To approximate this integral using a **Riemann sum**, we would discretize the hemisphere  $$\Omega$$  into $$N$$ uniformly spaced directions $$\omega_i^{(k)}$$, and compute:
 
 $$
 \int_{\Omega} f_r(x, \omega_i, \omega_o) \, L_i(x, \omega_i) \, (\omega_i \cdot n) \, d\omega_i \approx \sum_{k=1}^{N} f_r(x, \omega_i^{(k)}, \omega_o) \, L_i(x, \omega_i^{(k)}) \, (\omega_i^{(k)} \cdot n) \, \Delta \omega
 $$
 
 Where:
-- $\Delta \omega = \frac{2\pi}{N}$ if directions are uniformly distributed over the hemisphere,
-- $N$ is the number of discrete sample directions,
-- $\omega_i^{(k)}$ are the direction samples.
+- $$\Delta \omega = \frac{2\pi}{N}$$ if directions are uniformly distributed over the hemisphere,
+- $$N$$ is the number of discrete sample directions,
+- $$\omega_i^{(k)}$$ are the direction samples.
 
-In essence, we **sample the hemisphere deterministically**, evaluate the function at each sample, and multiply by the solid angle element $\Delta \omega$.
+In essence, we **sample the hemisphere deterministically**, evaluate the function at each sample, and multiply by the solid angle element $$\Delta \omega$$.
 
 ---
 ### Why this may not work
@@ -83,7 +83,7 @@ While this method works for low-dimensional, well-behaved integrals, it **does n
 
 - **High dimensionality**: Each additional bounce adds another integral - over the hemisphere at the new surface point.
 - **No adaptivity**: Riemann sums treat all directions equally, even though most contribute very little to the final radiance.
-- **Exponential cost**: For $k$ bounces and $N$ directions, the total number of evaluations becomes $N^k$, which grows exponentially.
+- **Exponential cost**: For $$k$$ bounces and $$N$$ directions, the total number of evaluations becomes $$N^k$$, which grows exponentially.
 
 This is why rendering engines rely on **stochastic methods**, which allows us to approximate the integral using just a few random but carefully chosen directions.
 
@@ -95,21 +95,21 @@ Before we dive into Monte Carlo rendering, we need to take a quick - and very us
 
 Let’s begin with a fundamental concept in probability: the **expected value**. You can think of it as the "average outcome" of a random experiment. If you flip a fair coin, you expect heads 50% of the time − that’s an expected value. But in math, we can make this more general and powerful.
 
-Imagine you have a function $f(x)$ defined over some domain $\mathcal{D}$ − for example, over all directions on a hemisphere above a surface point. This function might represent how much light comes from direction $x$, or how bright a pixel would be if a ray went in that direction.
+Imagine you have a function $$f(x)$$ defined over some domain $$\mathcal{D}$$ − for example, over all directions on a hemisphere above a surface point. This function might represent how much light comes from direction $$x$$, or how bright a pixel would be if a ray went in that direction.
 
-Now, suppose you're able to randomly sample points $x$ from the domain according to a **probability density function (PDF)** $p(x)$, which tells you how likely it is to pick any particular $x$. The expected value (i.e., the average result you'd get over many trials) of $f(x)$ is given by:
+Now, suppose you're able to randomly sample points $$x$$ from the domain according to a **probability density function (PDF)** $$p(x)$$, which tells you how likely it is to pick any particular $$x$$. The expected value (i.e., the average result you'd get over many trials) of $$f(x)$$ is given by:
 
 $$
 \mathbb{E}[f(X)] = \int_{\mathcal{D}} f(x) \, p(x) \, dx
 $$
 
-This equation tells us: “If we sample $x$ randomly from the distribution $p(x)$, then on average, $f(x)$ will behave like this.”
+This equation tells us: “If we sample $$x$$ randomly from the distribution $$p(x)$$, then on average, $$f(x)$$ will behave like this.”
 
-In the special case where $p(x)$ is **uniform** − meaning every point in the domain is equally likely − the expected value becomes a simple average. But in most practical scenarios, especially in rendering, the distribution isn’t uniform at all. Some directions may contribute far more to the final lighting than others, and sampling them more often is beneficial − more on that later.
+In the special case where $$p(x)$$ is **uniform** − meaning every point in the domain is equally likely − the expected value becomes a simple average. But in most practical scenarios, especially in rendering, the distribution isn’t uniform at all. Some directions may contribute far more to the final lighting than others, and sampling them more often is beneficial − more on that later.
 
-In rendering terms, $f(x)$ might represent something like:
+In rendering terms, $$f(x)$$ might represent something like:
 
-- the amount of light arriving from direction $x$ (incoming radiance),
+- the amount of light arriving from direction $$x$$ (incoming radiance),
 - the reflected light due to a specific BRDF,
 - or the entire contribution to a pixel's brightness.
 
@@ -132,7 +132,7 @@ But here’s the challenge: in high-dimensional spaces, or in complex scenes, ev
 
 So how can we approximate this integral more cleverly?
 
-Here’s the key idea: instead of trying to evaluate the function $f(x)$ everywhere, we choose a few points $x_i$ **randomly**, and weigh their contributions appropriately. If we can sample from a probability distribution $p(x)$ over the same domain $\mathcal{D}$, we can rewrite the integral as:
+Here’s the key idea: instead of trying to evaluate the function $$f(x)$$ everywhere, we choose a few points $$x_i$$ **randomly**, and weigh their contributions appropriately. If we can sample from a probability distribution $$p(x)$$ over the same domain $$\mathcal{D}$$, we can rewrite the integral as:
 
 $$
 I = \int_{\mathcal{D}} \frac{f(x)}{p(x)} \, p(x) \, dx = \mathbb{E}\left[\frac{f(X)}{p(X)}\right]
@@ -144,9 +144,9 @@ $$
 I \approx \frac{1}{N} \sum_{i=1}^{N} \frac{f(x_i)}{p(x_i)}
 $$
 
-Each term in the sum represents one random sample: we evaluate the function $f$ at that point, and divide it by how likely we were to pick it (the PDF value). This gives us an **unbiased estimate** of the integral: noisy, yes, but statistically correct − it will converge to the true value as the number of samples $N$ increases.
+Each term in the sum represents one random sample: we evaluate the function $$f$$ at that point, and divide it by how likely we were to pick it (the PDF value). This gives us an **unbiased estimate** of the integral: noisy, yes, but statistically correct − it will converge to the true value as the number of samples $$N$$ increases.
 
-This is the foundation of **Monte Carlo integration**: an incredibly general and powerful method that works even when the function $f(x)$ is complicated, discontinuous, or defined over a high-dimensional domain.
+This is the foundation of **Monte Carlo integration**: an incredibly general and powerful method that works even when the function $$f(x)$$ is complicated, discontinuous, or defined over a high-dimensional domain.
 
 And now here comes the best part: this is exactly what we need in rendering. When a pixel’s color depends on complex combinations of light paths, materials, occlusion, and geometry, we don’t want to brute-force everything. We want a method that can sample light paths randomly and still give us meaningful results.
 
@@ -165,15 +165,15 @@ In the next section, we’ll apply this technique directly to the light transpor
 
 Now that we understand how Monte Carlo integration can approximate complicated integrals, let’s return to our core problem: the **light transport equation**.
 
-Recall the rendering equation at a single surface point $x$:
+Recall the rendering equation at a single surface point $$x$$:
 
 $$
 L_o(x, \omega_o) = L_e(x, \omega_o) + \int_{\Omega} f_r(x, \omega_i, \omega_o) \, L_i(x, \omega_i) \, (\omega_i \cdot n) \, d\omega_i
 $$
 
-This equation tells us that the **outgoing radiance** $L_o$ in direction $\omega_o$ (e.g., toward the camera) is the sum of:
-- $L_e$: the **emitted radiance** from the surface itself, and
-- the **reflected radiance**, which is an integral over all incoming directions $\omega_i$ on the hemisphere $\Omega$.
+This equation tells us that the **outgoing radiance** $$L_o$$ in direction $$\omega_o$$ (e.g., toward the camera) is the sum of:
+- $$L_e$$: the **emitted radiance** from the surface itself, and
+- the **reflected radiance**, which is an integral over all incoming directions $$\omega_i$$ on the hemisphere $$\Omega$$.
 
 Let’s focus on the reflected part of the equation, which we want to approximate using Monte Carlo. For convenience, define the integrand as:
 
@@ -181,7 +181,7 @@ $$
 f(\omega_i) = f_r(x, \omega_i, \omega_o) \, L_i(x, \omega_i) \, (\omega_i \cdot n)
 $$
 
-This $f(\omega_i)$ represents the amount of incoming light from direction $\omega_i$ that gets reflected toward $\omega_o$ according to the surface’s BRDF.
+This $$f(\omega_i)$$ represents the amount of incoming light from direction $$\omega_i$$ that gets reflected toward $$\omega_o$$ according to the surface’s BRDF.
 
 To evaluate the integral:
 
@@ -189,7 +189,7 @@ $$
 \int_{\Omega} f(\omega_i) \, d\omega_i
 $$
 
-we apply Monte Carlo integration. We sample $N$ directions $\omega_i^{(k)}$ from some PDF $p(\omega_i)$ over the hemisphere $\Omega$, and compute:
+we apply Monte Carlo integration. We sample $$N$$ directions $$\omega_i^{(k)}$$ from some PDF $$p(\omega_i)$$ over the hemisphere $$\Omega$$, and compute:
 
 $$
 \int_{\Omega} f(\omega_i) \, d\omega_i \approx \frac{1}{N} \sum_{k=1}^{N} \frac{f(\omega_i^{(k)})}{p(\omega_i^{(k)})}
@@ -203,23 +203,23 @@ $$
 
 This is the **Monte Carlo form of the rendering equation**.
 
-At this point, the idea is simple: at every surface point we hit, we sample $N$ incoming directions, estimate how much light comes from those directions, weigh them appropriately, and add them up. If we do this for every pixel, we get an image. Sounds good in theory… but there’s a catch.
+At this point, the idea is simple: at every surface point we hit, we sample $$N$$ incoming directions, estimate how much light comes from those directions, weigh them appropriately, and add them up. If we do this for every pixel, we get an image. Sounds good in theory… but there’s a catch.
 
 ---
 ### Monte Carlo in Path Tracing
 
-Here’s the problem: the term $L_i(x, \omega_i)$ − the incoming radiance − isn’t something we know in advance. In fact, **it’s defined by the same rendering equation** − just at a different surface point, in a different direction.
+Here’s the problem: the term $$L_i(x, \omega_i)$$ − the incoming radiance − isn’t something we know in advance. In fact, **it’s defined by the same rendering equation** − just at a different surface point, in a different direction.
 
-This means that to evaluate $L_i$, we need to trace a new ray from point $x$ in direction $\omega_i$, find out where it hits, and repeat the process. That’s right: we’re solving the same equation again. **Recursively.**
+This means that to evaluate $$L_i$$, we need to trace a new ray from point $$x$$ in direction $$\omega_i$$, find out where it hits, and repeat the process. That’s right: we’re solving the same equation again. **Recursively.**
 
 This is exactly what **path tracing** does.
 
 At a high level, path tracing works like this:
 
 1. We shoot a ray from the camera into the scene.
-2. It hits a surface at point $x$.
-3. We evaluate emitted light $L_e$ at that point.
-4. Then, we pick a random direction $\omega_i$, trace a new ray into the scene, and compute $L_i$ recursively.
+2. It hits a surface at point $$x$$.
+3. We evaluate emitted light $$L_e$$ at that point.
+4. Then, we pick a random direction $$\omega_i$$, trace a new ray into the scene, and compute $$L_i$$ recursively.
 5. We multiply that result by the BRDF and geometry term, divide by the PDF, and return the weighted contribution.
 6. We repeat this process for multiple paths, and average their contributions to compute the final color.
 
