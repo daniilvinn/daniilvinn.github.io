@@ -1,4 +1,4 @@
-# High density geometry rendering in Omniforce Engine, part #1
+# High density geometry rendering in Omniforce Engine
 ## The problem
 The computer graphics industry has used the discrete levels of detail (LOD) for meshes in real-time rendering during its entire lifetime. However, it may not be as efficient as we would like it to be.
 
@@ -94,7 +94,7 @@ The rendering process:
 4. Render if the self error is small enough and the parent error is too big
 5. Stop subtree traversal
 
-That's all the building blocks we need to build such a mesh rendering pipeline. In the next parts of this series, I will explain how to implement it from the very beginning to getting actual pixels on screen.
+That's all the building blocks we need to build such a mesh rendering pipeline.
 
 ## Special thanks
 This entire system is pretty much a Nanite rendering pipeline from Unreal Engine 5. Considering this fact, I would like to thank [Brian Karis](https://x.com/briankaris) and the entire Nanite and Unreal Engine team, without them it wouldn't be possible, at least for me, at least for now.
