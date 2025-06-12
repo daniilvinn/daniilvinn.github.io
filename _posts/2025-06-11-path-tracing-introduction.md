@@ -75,7 +75,7 @@ Where:
 - $$\omega_i^{(k)}$$ are the direction samples.
 
 In essence, we **sample the hemisphere deterministically**, evaluate the function at each sample, and multiply by the solid angle element $$\Delta \omega$$.
-![Subdivided hemisphere visualization](https://github.com/user-attachments/assets/4ff19ee6-7a38-4565-a170-f828682d3747)
+![Subdivided hemisphere visualization](https://github.com/user-attachments/assets/680f7649-fd08-4219-bffb-832fc521052f)
 
 ---
 ### Why this may not work
