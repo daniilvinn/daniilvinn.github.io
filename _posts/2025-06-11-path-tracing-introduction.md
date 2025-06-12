@@ -75,6 +75,8 @@ Where:
 - $$\omega_i^{(k)}$$ are the direction samples.
 
 In essence, we **sample the hemisphere deterministically**, evaluate the function at each sample, and multiply by the solid angle element $$\Delta \omega$$.
+
+On the image below you can see a sphere that is subdivided into a set of discrete pieces, and with Riemann Sum Path Tracing we would shoot a ray into the center of each of those pieces.
 ![Subdivided hemisphere visualization](https://github.com/user-attachments/assets/680f7649-fd08-4219-bffb-832fc521052f)
 
 ---
