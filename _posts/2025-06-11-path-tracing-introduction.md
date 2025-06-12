@@ -77,6 +77,7 @@ Where:
 In essence, we **sample the hemisphere deterministically**, evaluate the function at each sample, and multiply by the solid angle element $$\Delta \omega$$.
 
 On the image below you can see a sphere that is subdivided into a set of discrete pieces, and with Riemann Sum Path Tracing we would shoot a ray into the center of each of those pieces.
+
 ![Subdivided hemisphere visualization](https://github.com/user-attachments/assets/680f7649-fd08-4219-bffb-832fc521052f)
 
 ---
@@ -269,6 +270,7 @@ But path tracing is only the beginning.
 As elegant as it is, pure path tracing suffers from a major drawback: **variance**, which shows up as noise. And while the algorithm is unbiased and eventually correct, getting to a clean, artifact-free image with a reasonable number of samples requires smarter techniques − like **importance sampling**, **multiple importance sampling (MIS)**, **Russian roulette**, and **denoising**.
 
 In the next chapter we are going to write some shaders for our first, simple path tracer and investigate the problems it has. In just a few chapters, we will be able to render the images as shown below.
+
 ![image](https://github.com/user-attachments/assets/3c1e638a-7bf3-4357-91e6-2c343b5bc036)
 ![image](https://github.com/user-attachments/assets/82accee6-f774-4688-9c41-e13574df600a)
 
