@@ -75,6 +75,7 @@ Where:
 - $$\omega_i^{(k)}$$ are the direction samples.
 
 In essence, we **sample the hemisphere deterministically**, evaluate the function at each sample, and multiply by the solid angle element $$\Delta \omega$$.
+![Subdivided hemisphere visualization](https://github.com/user-attachments/assets/ccb00887-fe76-49dc-b7f3-259b7a3c4fae)
 
 ---
 ### Why this may not work
@@ -265,7 +266,11 @@ But path tracing is only the beginning.
 
 As elegant as it is, pure path tracing suffers from a major drawback: **variance**, which shows up as noise. And while the algorithm is unbiased and eventually correct, getting to a clean, artifact-free image with a reasonable number of samples requires smarter techniques − like **importance sampling**, **multiple importance sampling (MIS)**, **Russian roulette**, and **denoising**.
 
-These ideas will be the focus of the next chapters. We’ll dive into how we can *guide* our sampling, *balance* different light sources, and *accelerate* convergence − all while preserving physical correctness.
+In the next chapter we are going to write some shaders for our first, simple path tracer and investigate the problems it has. In just a few chapters, we will be able to render the images as shown below.
+![image](https://github.com/user-attachments/assets/3c1e638a-7bf3-4357-91e6-2c343b5bc036)
+![image](https://github.com/user-attachments/assets/82accee6-f774-4688-9c41-e13574df600a)
+
+
 
 For now, if you’ve followed along this far, congratulations − you’ve just built a solid foundation for understanding one of the most powerful tools in physically based rendering.
 
