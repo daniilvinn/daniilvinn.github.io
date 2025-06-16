@@ -36,11 +36,11 @@ So, now it doesn't seem to be that easy to solve, especially that we literally c
 
 Yet, there's another problem
 
---- 
 ### The recursiveness of LTE
 
 If you look at the LTE once more, you may notice an equation for outgoing radiance at a point has an incoming radiance term. The thing is that incoming radiance is outgoing radiance from another point - **the equation is recursive**. It makes things even harder, especially that beams of light may bounce practically infinitely.
 
+---
 ## Why hemisphere?
 Now, when we understand the problems of solving the LTE, the last question arises - why sampling on hemisphere and not sphere? Maybe we should do both? In which cases? Let's answer these questions.
 
@@ -112,7 +112,7 @@ Where $$S^2$$ denotes the full unit sphere of directions.
 Understanding whether you need hemispherical or spherical integration is essential for choosing correct sampling strategies and ensuring unbiased rendering.
 
 ---
-### Summary
+## Summary of the problem
 
 Let's wrap up everything we have so far:
 
@@ -150,7 +150,6 @@ On the image below you can see a sphere that is subdivided into a set of discret
 
 ![Subdivided hemisphere visualization](https://github.com/user-attachments/assets/680f7649-fd08-4219-bffb-832fc521052f)
 
----
 ### Why this may not work
 
 While this method works for low-dimensional, well-behaved integrals, it **does not scale well** for rendering. There are several reasons:
@@ -189,7 +188,6 @@ In rendering terms, $$f(x)$$ might represent something like:
 
 And our goal is to compute its average over the hemisphere of directions − i.e., **to integrate it**. That’s where Monte Carlo comes in.
 
----
 ### Monte Carlo Integration
 
 **Now, let's talk about the key aspect and the foundation of the path tracing - Monte Carlo Integration.**
@@ -234,7 +232,6 @@ Reducing variance − without introducing bias − is one of the central challen
 
 In the next section, we’ll apply this technique directly to the light transport equation and see how it gives birth to **path tracing**.
 
----
 ### Solving LTE using Monte Carlo Integration
 
 Now that we understand how Monte Carlo integration can approximate complicated integrals, let’s return to our core problem: the **light transport equation**.
@@ -279,7 +276,6 @@ This is the **Monte Carlo form of the rendering equation**.
 
 At this point, the idea is simple: at every surface point we hit, we sample $$N$$ incoming directions, estimate how much light comes from those directions, weigh them appropriately, and add them up. If we do this for every pixel, we get an image. Sounds good in theory… but there’s a catch.
 
----
 ### Monte Carlo in Path Tracing
 
 Here’s the problem: the term $$L_i(x, \omega_i)$$ − the incoming radiance − isn’t something we know in advance. In fact, **it’s defined by the same rendering equation** − just at a different surface point, in a different direction.
