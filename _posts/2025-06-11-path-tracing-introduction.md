@@ -19,7 +19,7 @@ How much light reaches the camera from a given direction?
 To answer this, we need to simulate the transport of light throughout a scene - how it bounces, scatters, and is absorbed or emitted. This process is governed by the **Light Transport Equation** (LTE), first formalized by James Kajiya in 1986:
 
 $$
-L_o(x, \omega_o) = L_e(x, \omega_o) + \int_{\Omega} f_r(x, \omega_i, \omega_o) \, L_i(x, \omega_i) \, (\omega_i \cdot n) \, d\omega_i
+L_o(x, \omega_o) = L_e(x, \omega_o) + \int_{\Omega} f_r(x, \omega_i, \omega_o) L_i(x, \omega_i) (\omega_i \cdot n) d\omega_i
 $$
 
 Let's briefly walk through all of its terms:
@@ -40,6 +40,76 @@ Yet, there's another problem
 ### The recursiveness of LTE
 
 If you look at the LTE once more, you may notice an equation for outgoing radiance at a point has an incoming radiance term. The thing is that incoming radiance is outgoing radiance from another point - **the equation is recursive**. It makes things even harder, especially that beams of light may bounce practically infinitely.
+
+## Why hemisphere?
+Now, when we understand the problems of solving the LTE, the last question arises - why sampling on hemisphere and not sphere? Maybe we should do both? In which cases? Let's answer these questions.
+
+### Solid angle
+In 2D, we measure angles in radians. However, in 3D, we measure directional spread using solid angles, whose unit is the steradian (sr). A solid angle measures how large a surface appears from a particular point in space.
+
+The solid angle of a full sphere is:
+
+$$
+\Omega_s = 4\pi sr
+$$
+
+A **hemisphere**, which we often integrate over in rendering (for example, the LTE mentioned above) covers only **a half of the sphere**:
+
+$$
+\Omega_s = 4\pi sr
+$$
+
+When integrating radiance over a hemisphere, we write the rendering equation as:
+
+$$
+\int_{\Omega} f_r(x, \omega_i, \omega_o) L_i(x, \omega_i) (\omega_i \cdot n) d\omega_i
+$$
+
+See that $$d\omega_i$$? It denotes a differential solid angle – an infinitely small patch on the hemisphere of directions.
+
+To make this more concrete, we often express directions on the hemisphere in spherical coordinates, using:
+- $$\theta$$ – the angle from the surface normal (0 to $$\frac{\pi}{2}$$);
+- $$\phi$$ the azimuthal angle around the normal (0 to $$2\pi$$).
+
+The differential solid angle in these coordinates is:
+
+$$
+d\omega = \sin{\theta}{d\theta}{d\phi}
+$$
+
+This explains why simply writing $$d\theta$$ is insufficient - you must include both $$\sin{\theta}$$ and $$d\phi$$ to represent the full 3D geometry of the hemisphere. The full integral becomes:
+
+$$
+\int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} {f_r(x, \omega_i, \omega_o)}{L_i(x, \omega_i)}{(\omega_i \cdot n)}{\sin\theta}{d\theta}{d\phi}
+$$
+
+
+### Why we sample the hemisphere?
+When a light ray hits a surface, the reflected light depends on incoming radiance from the hemisphere of directions above that point. So when we trace rays to evaluate the rendering equation, we sample directions from that hemisphere.
+
+In particular, we:
+- Sample only the upper hemisphere if the surface is opaque and doesn't transmit light.
+- Use cosine-weighted, importance sampling or other sampling techniques over the hemisphere for better convergence.
+
+This is why many sampling techniques (e.g., cosine-weighted hemisphere sampling) generate directions constrained to that half-sphere.
+
+### What about full sphere sampling?
+While hemisphere sampling is sufficient for surfaces that only reflect light above the tangent plane, there are important cases where we must integrate over the full sphere:
+- Participating media (e.g., fog, smoke): light can scatter in all directions.
+- Subsurface scattering: light enters a surface and exits from another point, scattering inside the material.
+- Environment lighting from inside volumes.
+- Bidirectional path tracing and volumetric photon mapping techniques.
+
+In these cases, the integration becomes:
+
+$$
+\int_{S^2} f(\omega){d\omega} = \int_{0}^{2\pi} \int_{0}^{\pi} {f(\theta, \phi)}{\sin\theta} {d\theta}{d\phi}
+$$
+
+
+Where $$S^2$$ denotes the full unit sphere of directions.
+
+Understanding whether you need hemispherical or spherical integration is essential for choosing correct sampling strategies and ensuring unbiased rendering.
 
 ---
 ### Summary
