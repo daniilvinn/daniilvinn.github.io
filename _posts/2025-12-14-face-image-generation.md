@@ -82,7 +82,7 @@ $$
 \mathcal{L}_{recon} = \lambda_1 ||x - \hat{x}||_1 + \lambda_{perceptual} \sum_{l \in \mathcal{L}} ||\phi_l(x) - \phi_l(\hat{x})||_2
 $$
 
-where $$\phi_l(\cdot)$$ extracts features from layer $$l$$ of a pretrained VGG-16 network. The perceptual loss is computed across multiple intermediate layers (relu1_2, relu2_2, relu3_3, relu4_3) to capture both low-level textures and high-level semantic features. This multi-scale perceptual loss substantially improves reconstruction quality, particularly for high-frequency facial details such as skin texture, hair strands, and fine wrinkles that are poorly captured by pixel-wise metrics alone. Loss weights are set to $$\lambda_1 = 1.0$$ and $$\lambda_{perceptual} = 0.1$$.
+where $$\phi_l(\cdot)$$ extracts features from layer $$l$$ of a pretrained VGG-19 network. The perceptual loss is computed across multiple intermediate layers (relu1_2, relu2_2, relu3_3, relu4_3) to capture both low-level textures and high-level semantic features. This multi-scale perceptual loss substantially improves reconstruction quality, particularly for high-frequency facial details such as skin texture, hair strands, and fine wrinkles that are poorly captured by pixel-wise metrics alone.
 
 #### Adversarial Fine-tuning
 
@@ -217,9 +217,7 @@ This work presents a variational autoencoder designed for consumer-hardware-cons
 
 The VAE component establishes the foundation for the complete generation pipeline. Part #2 of this series will present the flow matching model, covering:
 
-- **Flow Matching Architecture**: Continuous normalizing flows for latent space generation
+- **Flow Matching Architecture**: Continuous flow matching operating over latent space
 - **Conditioning Mechanisms**: Enabling controlled generation via attribute vectors or other modalities
 - **Sampling Procedures**: Efficient ODE solvers for fast, high-quality sampling
-- **End-to-End Evaluation**: Complete pipeline integration, generation quality assessment, and comparison with baseline methods
-
-The complete system aims to demonstrate that modern generative techniques - flow matching in learned latent spaces - can achieve competitive results on consumer hardware, democratizing access to high-quality face generation research and applications.
+- **End-to-End Evaluation**: Complete pipeline integration and generation quality assessment
