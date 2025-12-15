@@ -153,7 +153,8 @@ These metrics warrant contextualization. First, the 1:768 compression ratio inhe
 
 Visual comparison of original and reconstructed images demonstrates the model's capability to preserve identity and expression:
 
-<img src="https://github.com/user-attachments/assets/e16bbfde-8560-4d96-a185-18943aecd184" alt="Comparison grid showing original images (top row) and VAE reconstructions (bottom row)" style="max-width: 100%; height: auto; display: block;" />
+<img src="https://github.com/user-attachments/assets/adf094b6-0e1f-4a3a-bb35-f7f1e4da0a7f" alt="Comparison grid showing original images (top row) and VAE reconstructions (bottom row)" style="max-width: 100%; height: auto; display: block;" />
+<img width="2048" height="502" alt="Untitled" src="https://github.com/user-attachments/assets/adf094b6-0e1f-4a3a-bb35-f7f1e4da0a7f" />
 
 *Comparison grid: Original images from FFHQ validation set (top row) and corresponding VAE reconstructions after adversarial fine-tuning (bottom row)*
 
