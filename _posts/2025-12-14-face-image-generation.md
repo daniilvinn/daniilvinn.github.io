@@ -170,6 +170,28 @@ Empirical analysis of the learned latent space reveals several properties conduc
 
 - **Distribution Coverage**: The posterior distribution $$q(z\mid x)$$ balances adherence to the Gaussian prior $$\mathcal{N}(0, I)$$ with preservation of semantic information. KL divergence per dimension averages 0.08 nats, indicating moderate but non-negligible deviation from the prior. This trade-off enables the flow matching model to leverage a relatively well-behaved prior while retaining sufficient information for conditional generation.
 
+### Latent Space Interpolation
+
+To empirically validate the smoothness and semantic organization of the learned latent space, interpolation experiments were conducted between pairs of face encodings. Given two face images $$x_1$$ and $$x_2$$ with corresponding latent encodings $$z_1 = \mu_1$$ and $$z_2 = \mu_2$$ (using the posterior mean for deterministic interpolation), intermediate latent codes are generated via spherical linear interpolation (SLERP):
+
+$$
+z_t = \frac{\sin((1-t)\theta)}{\sin(\theta)} z_1 + \frac{\sin(t\theta)}{\sin(\theta)} z_2
+$$
+
+where $$\theta = \arccos\left(\frac{z_1 \cdot z_2}{||z_1|| \, ||z_2||}\right)$$ and $$t \in [0, 1]$$. SLERP is preferred over linear interpolation to maintain consistent norm throughout the trajectory, which better respects the geometry of the approximately Gaussian latent distribution.
+
+**Spatial Feature Interpolation**: The interpolation results demonstrate smooth transitions across multiple semantic attributes simultaneously. Facial identity morphs continuously between the two endpoint identities without discrete jumps or artifacts. Crucially, spatial features—including pose orientation, face shape, and facial feature positioning—interpolate coherently. For instance, interpolating between a frontal face and a profile view produces intermediate poses at natural angles, while facial features (eyes, nose, mouth) transition smoothly in both position and appearance.
+
+Expression and lighting also exhibit smooth interpolation. Transitioning between different expressions (e.g., neutral to smiling) produces natural intermediate expressions without anatomically implausible configurations. Similarly, lighting direction and intensity change gradually across the interpolation trajectory, suggesting the latent space captures these attributes as continuous rather than discrete factors.
+
+**Interpolation Quality**: While some fine details (hair texture, background elements) may exhibit slight inconsistencies during interpolation—a consequence of the aggressive compression—the overall perceptual quality remains high. The facial region maintains coherent identity and realistic appearance throughout the trajectory. This behavior validates the design choice of prioritizing facial features during training: the attributes most relevant to face generation are precisely those that interpolate most smoothly.
+
+<img src="IMAGE_URL_HERE" alt="Latent space interpolation showing smooth transitions between two face identities across multiple intermediate steps" style="max-width: 100%; height: auto; display: block;" />
+
+*Latent space interpolation between two face encodings (leftmost and rightmost). Intermediate frames demonstrate smooth transitions in identity, pose, expression, and spatial features.*
+
+These interpolation experiments confirm that the learned latent space possesses the geometric properties necessary for effective generative modeling: smoothness, continuity, and semantic organization. The flow matching model can leverage these properties to generate diverse, high-quality samples through latent space sampling and traversal.
+
 ## Challenges and Design Insights
 
 ### Training Stability and Posterior Collapse
