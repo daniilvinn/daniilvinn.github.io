@@ -124,7 +124,7 @@ Quantitative metrics on validation set:
 - **SSIM**: 0.31
 - **LPIPS**: 0.67
 
-Note that these metrics may appear suboptimal in absolute terms, partially due to the aggressive compression ratio, but also because the model prioritizes facial feature reconstruction over background quality. As discussed in the Challenges section, background reconstruction remains imperfect, which negatively impacts global metrics like PSNR and SSIM. However, the facial regions themselves—which are the primary focus for downstream generation—maintain high perceptual quality.
+Note that these metrics may appear suboptimal in absolute terms, partially due to the aggressive compression ratio, but also because the model prioritizes facial feature reconstruction over background quality. As discussed in the Challenges section, background reconstruction remains imperfect, which negatively impacts global metrics like PSNR and SSIM. However, the facial regions themselves - which are the primary focus for downstream generation - maintain high perceptual quality.
 
 ### Latent Space Properties
 
@@ -137,7 +137,7 @@ Analysis of the learned latent space reveals several desirable properties:
 
 ### Training Stability
 
-Initial training attempts with $\beta > 0.2$ resulted in posterior collapse, where the model learned to ignore the latent code and rely primarily on the decoder's capacity. Reducing $\beta$ < 0.2 and "free bits" technique to force information preservation resolves this issue.
+Initial training attempts with $$\beta > 0.2$$ resulted in posterior collapse, where the model learned to ignore the latent code and rely primarily on the decoder's capacity. Reducing $$\beta$$ < 0.2 and "free bits" technique to force information preservation resolves this issue.
 
 ### Compression vs. Quality Trade-off
 
