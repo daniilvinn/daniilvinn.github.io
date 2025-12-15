@@ -103,12 +103,11 @@ where $$D(\cdot)$$ is the PatchGAN discriminator and $$G(z)$$ represents the dec
 The adversarial component is activated only after base VAE convergence, as premature introduction destabilizes training and can trigger mode collapse. The adversarial weight $$\lambda_{adv} = 0.1$$ balances adversarial feedback against reconstruction fidelity, preventing the discriminator from overwhelming the reconstruction objectives. The discriminator is trained with label smoothing (real labels = 0.9, fake labels = 0.1) to improve training stability.
 
 **Before adversarial fine-tuning:**
+<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/0b063883-6110-48e8-8dda-72bfe56d1dcf" />
 
-![Before adversarial fine-tuning](IMAGE_URL_HERE)
 
 **After adversarial fine-tuning:**
-
-![After adversarial fine-tuning](IMAGE_URL_HERE)
+<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/50ee5948-bab7-4612-b1cf-9ac2f9e280ab" />
 
 ### Training Configuration
 
@@ -154,11 +153,8 @@ These metrics warrant contextualization. First, the 1:768 compression ratio inhe
 
 Visual comparison of original and reconstructed images demonstrates the model's capability to preserve identity and expression:
 
-![Ground truth (original) image](IMAGE_URL_HERE)
+<img width="4096" height="512" alt="comparison_grid" src="https://github.com/user-attachments/assets/e16bbfde-8560-4d96-a185-18943aecd184" />
 *Original image from FFHQ validation set*
-
-![Reconstructed image](IMAGE_URL_HERE)
-*VAE reconstruction (after adversarial fine-tuning)*
 
 The reconstruction successfully preserves facial identity, expression, and key attributes while exhibiting expected smoothing in high-frequency details.
 
