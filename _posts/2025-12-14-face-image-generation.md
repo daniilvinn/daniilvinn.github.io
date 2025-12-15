@@ -155,7 +155,7 @@ Visual comparison of original and reconstructed images demonstrates the model's 
 
 <img src="https://github.com/user-attachments/assets/adf094b6-0e1f-4a3a-bb35-f7f1e4da0a7f" alt="Comparison grid showing original images (top row) and VAE reconstructions (bottom row)" style="max-width: 100%; height: auto; display: block;" />
 
-*Comparison grid: Original images from FFHQ validation set (top row) and corresponding VAE reconstructions after adversarial fine-tuning (bottom row)*
+<p style="text-align: center;"><i>Comparison grid: Original images from FFHQ validation set (top row) and corresponding VAE reconstructions after adversarial fine-tuning (bottom row)</i></p>
 
 The reconstruction successfully preserves facial identity, expression, and key attributes while exhibiting expected smoothing in high-frequency details.
 
@@ -187,8 +187,7 @@ Expression and lighting also exhibit smooth interpolation. Transitioning between
 
 **Interpolation Quality**: While some fine details (hair texture, background elements) may exhibit slight inconsistencies during interpolation - a consequence of the aggressive compression - the overall perceptual quality remains high. The facial region maintains coherent identity and realistic appearance throughout the trajectory. This behavior validates the design choice of prioritizing facial features during training: the attributes most relevant to face generation are precisely those that interpolate most smoothly.
 
-<img src="IMAGE_URL_HERE" alt="Latent space interpolation showing smooth transitions between two face identities across multiple intermediate steps" style="max-width: 100%; height: auto; display: block;" />
-
+<img src="https://github.com/user-attachments/assets/1878a33c-a107-4665-b7f7-2486f1c8a8ee" alt="Comparison grid showing original images (top row) and VAE reconstructions (bottom row)" style="max-width: 100%; height: auto; display: block;" />
 <p style="text-align: center;"><i>Latent space interpolation between two face encodings. Animation demonstrates smooth transitions in identity, pose, expression, and spatial features</i></p>
 
 These interpolation experiments confirm that the learned latent space possesses the geometric properties necessary for effective generative modeling: smoothness, continuity, and semantic organization. The flow matching model can leverage these properties to generate diverse, high-quality samples through latent space sampling and traversal.
