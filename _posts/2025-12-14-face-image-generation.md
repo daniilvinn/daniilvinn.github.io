@@ -102,11 +102,12 @@ where $$D(\cdot)$$ is the PatchGAN discriminator and $$G(z)$$ represents the dec
 
 The adversarial component is activated only after base VAE convergence, as premature introduction destabilizes training and can trigger mode collapse. The adversarial weight $$\lambda_{adv} = 0.1$$ balances adversarial feedback against reconstruction fidelity, preventing the discriminator from overwhelming the reconstruction objectives. The discriminator is trained with label smoothing (real labels = 0.9, fake labels = 0.1) to improve training stability.
 
-**Before and after adversarial fine-tuning:**
+<div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin: 20px 0;">
+  <img src="https://github.com/user-attachments/assets/0b063883-6110-48e8-8dda-72bfe56d1dcf" alt="VAE reconstruction before adversarial fine-tuning" style="max-width: 256px; height: auto;" />
+  <img src="https://github.com/user-attachments/assets/50ee5948-bab7-4612-b1cf-9ac2f9e280ab" alt="VAE reconstruction after adversarial fine-tuning" style="max-width: 256px; height: auto;" />
+</div>
 
-<img src="https://github.com/user-attachments/assets/0b063883-6110-48e8-8dda-72bfe56d1dcf" alt="VAE reconstruction before adversarial fine-tuning" style="max-width: 256px; height: auto; display: block; margin: 0 auto;" />
-
-<img src="https://github.com/user-attachments/assets/50ee5948-bab7-4612-b1cf-9ac2f9e280ab" alt="VAE reconstruction after adversarial fine-tuning" style="max-width: 256px; height: auto; display: block; margin: 0 auto;" />
+<p style="text-align: center;"><strong>Results of adversarial fine-tuning. First image representation pure reconstruction + KL loss, while second one is post-fine-tuning result</strong></p>
 
 ### Training Configuration
 
