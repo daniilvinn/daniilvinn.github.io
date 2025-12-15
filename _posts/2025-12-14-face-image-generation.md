@@ -107,7 +107,7 @@ The adversarial component is activated only after base VAE convergence, as prema
   <img src="https://github.com/user-attachments/assets/50ee5948-bab7-4612-b1cf-9ac2f9e280ab" alt="VAE reconstruction after adversarial fine-tuning" style="max-width: 256px; height: auto;" />
 </div>
 
-<p style="text-align: center;"><strong>Results of adversarial fine-tuning. First image representation pure reconstruction + KL loss, while second one is post-fine-tuning result</strong></p>
+<p style="text-align: center;"><i>Results of adversarial fine-tuning. First image representation pure reconstruction + KL loss, while second one is post-fine-tuning result</i></p>
 
 ### Training Configuration
 
@@ -154,7 +154,6 @@ These metrics warrant contextualization. First, the 1:768 compression ratio inhe
 Visual comparison of original and reconstructed images demonstrates the model's capability to preserve identity and expression:
 
 <img src="https://github.com/user-attachments/assets/adf094b6-0e1f-4a3a-bb35-f7f1e4da0a7f" alt="Comparison grid showing original images (top row) and VAE reconstructions (bottom row)" style="max-width: 100%; height: auto; display: block;" />
-<img width="2048" height="502" alt="Untitled" src="https://github.com/user-attachments/assets/adf094b6-0e1f-4a3a-bb35-f7f1e4da0a7f" />
 
 *Comparison grid: Original images from FFHQ validation set (top row) and corresponding VAE reconstructions after adversarial fine-tuning (bottom row)*
 
@@ -168,7 +167,9 @@ Empirical analysis of the learned latent space reveals several properties conduc
 
 - **Partial Disentanglement**: While explicit disentanglement objectives are not employed, informal analysis suggests different latent dimensions capture somewhat independent factors of variation (e.g., pose, lighting, expression). Complete disentanglement is not achieved - as expected without explicit supervision such as $$\beta$$-VAE with very high $$\beta$$ or supervised attribute labels - but the observed partial separation facilitates interpretable latent space navigation.
 
-- **Distribution Coverage**: The posterior distribution $$q(z\mid x)$$ balances adherence to the Gaussian prior $$\mathcal{N}(0, I)$$ with preservation of semantic information. KL divergence per dimension averages 0.08 nats, indicating moderate but non-negligible deviation from the prior. This trade-off enables the flow matching model to leverage a relatively well-behaved prior while retaining sufficient information for conditional generation.
+- **Distribution Coverage**: The posterior distribution $$q(z\mid x)$$ balances adherence to the Gaussian prior $$\mathcal{N}(0, I)$$ with preservation of semantic information. KL divergence per dimension averages 0.32 nats, indicating moderate but non-negligible deviation from the prior. This trade-off enables the flow matching model to leverage a relatively well-behaved prior while retaining sufficient information for conditional generation.
+
+- **Latent Manipulation and Feature Control**: Empirical exploration reveals that targeted modifications to specific dimensions in the 256-dimensional latent vector produce interpretable changes in decoded facial features. Adjusting individual latent values can influence attributes such as facial expression (smile intensity, mouth opening), eye characteristics (size, openness), and other facial features. However, these manipulations demonstrate the inherently entangled nature of the representation: individual latent dimensions do not correspond to single, isolated semantic attributes. Rather, each dimension contributes to a combination of features, with multiple dimensions collectively encoding complex attributes. For instance, modifying a single dimension may simultaneously affect smile intensity, mouth curvature, and subtle changes in cheek positioning. This entanglement is expected given the absence of explicit disentanglement objectives during training and the aggressive compression ratio, which necessitates efficient information encoding where each dimension must contribute to multiple facial attributes.
 
 ### Latent Space Interpolation
 
@@ -178,17 +179,17 @@ $$
 z_t = \frac{\sin((1-t)\theta)}{\sin(\theta)} z_1 + \frac{\sin(t\theta)}{\sin(\theta)} z_2
 $$
 
-where $$\theta = \arccos\left(\frac{z_1 \cdot z_2}{||z_1|| \, ||z_2||}\right)$$ and $$t \in [0, 1]$$. SLERP is preferred over linear interpolation to maintain consistent norm throughout the trajectory, which better respects the geometry of the approximately Gaussian latent distribution.
+where $$\theta = \arccos\left(\frac{z_1 \cdot z_2}{\lVert z_1 \rVert \, \lVert z_2 \rVert}\right)$$ and $$t \in [0, 1]$$. SLERP is preferred over linear interpolation to maintain consistent norm throughout the trajectory, which better respects the geometry of the approximately Gaussian latent distribution.
 
-**Spatial Feature Interpolation**: The interpolation results demonstrate smooth transitions across multiple semantic attributes simultaneously. Facial identity morphs continuously between the two endpoint identities without discrete jumps or artifacts. Crucially, spatial features—including pose orientation, face shape, and facial feature positioning—interpolate coherently. For instance, interpolating between a frontal face and a profile view produces intermediate poses at natural angles, while facial features (eyes, nose, mouth) transition smoothly in both position and appearance.
+**Spatial Feature Interpolation**: The interpolation results demonstrate smooth transitions across multiple semantic attributes simultaneously. Facial identity morphs continuously between the two endpoint identities without discrete jumps or artifacts. Crucially, spatial features - including pose orientation, face shape, and facial feature positioning - interpolate coherently. For instance, interpolating between a frontal face and a profile view produces intermediate poses at natural angles, while facial features (eyes, nose, mouth) transition smoothly in both position and appearance.
 
 Expression and lighting also exhibit smooth interpolation. Transitioning between different expressions (e.g., neutral to smiling) produces natural intermediate expressions without anatomically implausible configurations. Similarly, lighting direction and intensity change gradually across the interpolation trajectory, suggesting the latent space captures these attributes as continuous rather than discrete factors.
 
-**Interpolation Quality**: While some fine details (hair texture, background elements) may exhibit slight inconsistencies during interpolation—a consequence of the aggressive compression—the overall perceptual quality remains high. The facial region maintains coherent identity and realistic appearance throughout the trajectory. This behavior validates the design choice of prioritizing facial features during training: the attributes most relevant to face generation are precisely those that interpolate most smoothly.
+**Interpolation Quality**: While some fine details (hair texture, background elements) may exhibit slight inconsistencies during interpolation - a consequence of the aggressive compression - the overall perceptual quality remains high. The facial region maintains coherent identity and realistic appearance throughout the trajectory. This behavior validates the design choice of prioritizing facial features during training: the attributes most relevant to face generation are precisely those that interpolate most smoothly.
 
 <img src="IMAGE_URL_HERE" alt="Latent space interpolation showing smooth transitions between two face identities across multiple intermediate steps" style="max-width: 100%; height: auto; display: block;" />
 
-*Latent space interpolation between two face encodings (leftmost and rightmost). Intermediate frames demonstrate smooth transitions in identity, pose, expression, and spatial features.*
+<p style="text-align: center;"><i>Latent space interpolation between two face encodings. Animation demonstrates smooth transitions in identity, pose, expression, and spatial features</i></p>
 
 These interpolation experiments confirm that the learned latent space possesses the geometric properties necessary for effective generative modeling: smoothness, continuity, and semantic organization. The flow matching model can leverage these properties to generate diverse, high-quality samples through latent space sampling and traversal.
 
