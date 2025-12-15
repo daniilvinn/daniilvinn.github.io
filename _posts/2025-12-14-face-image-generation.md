@@ -179,7 +179,7 @@ $$
 z_t = \frac{\sin((1-t)\theta)}{\sin(\theta)} z_1 + \frac{\sin(t\theta)}{\sin(\theta)} z_2
 $$
 
-where $$\theta = \arccos\left(\frac{z_1 \cdot z_2}{\lVert z_1 \rVert \, \lVert z_2 \rVert}\right)$$ and $$t \in [0, 1]$$. SLERP is preferred over linear interpolation to maintain consistent norm throughout the trajectory, which better respects the geometry of the approximately Gaussian latent distribution.
+where $$\theta = \arccos\left(\frac{z_1 \cdot z_2}{\lVert z_1 \rVert \, \lVert z_2 \rVert}\right)$$ and $$t \in [0, 1]$$. SLERP is preferred over linear interpolation to maintain consistent norm throughout the trajectory, which better respects the geometry of the latent distribution.
 
 **Spatial Feature Interpolation**: The interpolation results demonstrate smooth transitions across multiple semantic attributes simultaneously. Facial identity morphs continuously between the two endpoint identities without discrete jumps or artifacts. Crucially, spatial features - including pose orientation, face shape, and facial feature positioning - interpolate coherently. For instance, interpolating between a frontal face and a profile view produces intermediate poses at natural angles, while facial features (eyes, nose, mouth) transition smoothly in both position and appearance.
 
