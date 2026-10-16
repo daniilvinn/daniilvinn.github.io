@@ -1,3 +1,4 @@
+# Testing latent straightness as a predictor of video rollout stability
 ## The problem
 
 When you train an autoregressive video generator or a world model, one of the first decisions is which latent space to work in: a VAE, a representation encoder like DINOv3, or something else. Each option costs a full training run to evaluate, so it would be very useful to have a cheap metric that can be computed on the frozen latent space and tells in advance how stable the rollouts will be.
