@@ -3,7 +3,7 @@
 
 When you train an autoregressive video generator or a world model, one of the first decisions is which latent space to work in: a VAE, a representation encoder like DINOv3, or something else. Each option costs a full training run to evaluate, so it would be very useful to have a cheap metric that can be computed on the frozen latent space and tells in advance how stable the rollouts will be.
 
-For image diffusion this question is close to solved. Frozen-latent metrics such as velocity irreducible variance, iFID or AffineTok's $M_{\mathrm{SAC}}$ correlate with generation quality at roughly 0.85–0.96 across 13 to 86 tokenizers. For autoregressive video and world models, however, I could not find a study that validates a frozen predictor of *rollout stability* across many encoders. The closest works change the latent space and show that rollouts change, which is not the same thing.
+For image diffusion this question is close to solved. Frozen-latent metrics such as velocity irreducible variance, iFID or AffineTok's $$M_{\mathrm{SAC}}$$ correlate with generation quality at roughly 0.85–0.96 across 13 to 86 tokenizers. For autoregressive video and world models, however, I could not find a study that validates a frozen predictor of *rollout stability* across many encoders. The closest works change the latent space and show that rollouts change, which is not the same thing.
 
 So the question for this series of experiments was:
 
@@ -14,15 +14,15 @@ All experiments below ran over about a week, roughly 40 GPU-hours, on a single R
 
 ## Setup
 
-- **Data:** Kinetics-400 clips, center-cropped to $256 \times 256$. 1300 training clips at 15 fps, 409 test clips. Clips with duplicated (telecined) frames were removed, since repeated frames create fake uneven spacing.
-- **Encoders:** DINOv3 ViT-B (with a PCA bottleneck), FLUX.2 VAE, Wan2.2 VAE and DC-AE f32. Every encoder produces $8 \times 8 = 64$ tokens per frame.
+- **Data:** Kinetics-400 clips, center-cropped to $$256 \times 256$$. 1300 training clips at 15 fps, 409 test clips. Clips with duplicated (telecined) frames were removed, since repeated frames create fake uneven spacing.
+- **Encoders:** DINOv3 ViT-B (with a PCA bottleneck), FLUX.2 VAE, Wan2.2 VAE and DC-AE f32. Every encoder produces $$8 \times 8 = 64$$ tokens per frame.
 - **Generator:** the same recipe for every latent space. A 39M-parameter DiT, flow matching with x-prediction, diffusion forcing, block-causal over 16 frames, 6000 training steps. One run takes about 17 minutes.
 - **Rollouts:** 8 real context frames, then 48 generated frames.
 - **Outcomes:** short-horizon accuracy (error relative to copying the last frame), late drift (Fréchet distance at horizons 32–48), blur (energy ratio) and freezing (motion ratio). Outcome definitions were fixed before looking at any generator result.
 
 ## The baseline: slowness
 
-Any candidate metric has to beat *slowness*, which is the error of predicting the next frame as a copy of the current one, normalized by the spread of the frames $V$:
+Any candidate metric has to beat *slowness*, which is the error of predicting the next frame as a copy of the current one, normalized by the spread of the frames $$V$$:
 
 $$
 \rho_{\mathrm{copy}} = \frac{\mathbb{E}\lVert z_t - z_{t-1} \rVert^2}{V}
@@ -32,21 +32,21 @@ It is trivial to compute and it turned out to be very hard to beat. At clip leve
 
 ## Part 1. Trajectory straightness
 
-The starting hypothesis was that straighter latent trajectories should be easier to roll out. If consecutive latents lay on a straight line at constant speed, the next frame would be predicted exactly by $z_{t+1} = 2 z_t - z_{t-1}$.
+The starting hypothesis was that straighter latent trajectories should be easier to roll out. If consecutive latents lay on a straight line at constant speed, the next frame would be predicted exactly by $$z_{t+1} = 2 z_t - z_{t-1}$$.
 
-To measure it, I used an energy version of straightness, with steps $v_t = z_t - z_{t-1}$, accelerations $a_t = v_{t+1} - v_t$ and encoder noise floor $\tau$:
+To measure it, I used an energy version of straightness, with steps $$v_t = z_t - z_{t-1}$$, accelerations $$a_t = v_{t+1} - v_t$$ and encoder noise floor $$\tau$$:
 
 $$
 S = \frac{\mathbb{E}\lVert a_t \rVert^2 - 6\tau}{\mathbb{E}\lVert v_t \rVert^2 - 2\tau}
 $$
 
-$S$ equals 0 for a straight line, 2 for a random walk and 3 for white noise.
+$$S$$ equals 0 for a straight line, 2 for a random walk and 3 for white noise.
 
 Results:
 
-- **Natural-video latents are not straight.** At 15 fps, $S$ is 2.24–2.44 for all four encoders, and consecutive steps turn by 92–101 degrees.
-- **Curvature is tied to slowness.** There is an exact identity $S \cdot \rho_{\mathrm{copy}} = \rho_{\mathrm{line}}$, where $\rho_{\mathrm{line}}$ is the error of straight-line extrapolation. In the data, $S$ and $\rho_{\mathrm{copy}}$ rise together as the frame rate drops, and comparing encoders at matched displacement changes their order.
-- **No predictive power beyond slowness.** Across 409 clips and five generators, the partial correlation of curvature with short-horizon error after removing $\rho_{\mathrm{copy}}$ is −0.04 to +0.13. After also controlling for each clip's local motion, the residual effect runs *against* the hypothesis: at equal displacement, straighter clips are relatively harder (−0.20 to −0.28). The likely reason is that low curvature at a fixed step size means directed motion, which is exactly what these generators fail to continue.
+- **Natural-video latents are not straight.** At 15 fps, $$S$$ is 2.24–2.44 for all four encoders, and consecutive steps turn by 92–101 degrees.
+- **Curvature is tied to slowness.** There is an exact identity $$S \cdot \rho_{\mathrm{copy}} = \rho_{\mathrm{line}}$$, where $$\rho_{\mathrm{line}}$$ is the error of straight-line extrapolation. In the data, $$S$$ and $$\rho_{\mathrm{copy}}$$ rise together as the frame rate drops, and comparing encoders at matched displacement changes their order.
+- **No predictive power beyond slowness.** Across 409 clips and five generators, the partial correlation of curvature with short-horizon error after removing $$\rho_{\mathrm{copy}}$$ is −0.04 to +0.13. After also controlling for each clip's local motion, the residual effect runs *against* the hypothesis: at equal displacement, straighter clips are relatively harder (−0.20 to −0.28). The likely reason is that low curvature at a fixed step size means directed motion, which is exactly what these generators fail to continue.
 
 The next step was to intervene. I applied invertible per-token maps to the Wan2.2 latent (a rotation as a control, random warps and learned flows that straighten or curve trajectories) and trained the same generator on each variant. Since the maps are invertible, every variant carries the same information.
 
@@ -58,18 +58,18 @@ To summarize:
 
 - Curvature at a fixed frame rate mostly re-measures slowness
 - Straightening a latent space with invertible maps collapses it and hurts accuracy
-- No curvature or spacing metric predicted outcomes beyond $\rho_{\mathrm{copy}}$
+- No curvature or spacing metric predicted outcomes beyond $$\rho_{\mathrm{copy}}$$
 
 ## Part 2. Why second-order metrics are redundant
 
-After these results I wanted to understand why every metric behaved like slowness. For a stationary latent sequence with temporal power spectrum $P(\omega)$, both baselines are averages over the spectrum:
+After these results I wanted to understand why every metric behaved like slowness. For a stationary latent sequence with temporal power spectrum $$P(\omega)$$, both baselines are averages over the spectrum:
 
 $$
 \rho_{\mathrm{copy}} = \big\langle 4 \sin^2(\omega/2) \big\rangle_P, \qquad
 \rho_{\mathrm{line}} = \big\langle 16 \sin^4(\omega/2) \big\rangle_P
 $$
 
-This means curvature is essentially the spectral centroid of the velocity spectrum. Even the error of the best linear predictor is fixed by $P$ (Kolmogorov–Szegő). Every second-order statistic is a different summary of the same spectrum. The derivation explains why these metrics correlate; that they are redundant across real encoders is the empirical finding from Part 1.
+This means curvature is essentially the spectral centroid of the velocity spectrum. Even the error of the best linear predictor is fixed by $$P$$ (Kolmogorov–Szegő). Every second-order statistic is a different summary of the same spectrum. The derivation explains why these metrics correlate; that they are redundant across real encoders is the empirical finding from Part 1.
 
 Because of this, I shelved a planned pre-registered stage 3 (at least 36 latent spaces with 3 seeds, about 15 GPU-days). It would have tested more summaries of the same spectrum.
 
@@ -84,7 +84,7 @@ The V-RAE paper reports that tFVD (decode the midpoint between neighbouring late
 | tFVD within VAEs (Spearman) | −0.30 |
 | tFVD within V-RAEs (Spearman) | −0.20 |
 
-The size of the correlation reproduces, but in my analysis it comes from the split between the two families, not from ranking autoencoders within a family. It is also not slowness, since $\rho_{\mathrm{copy}}$ has the opposite sign.
+The size of the correlation reproduces, but in my analysis it comes from the split between the two families, not from ranking autoencoders within a family. It is also not slowness, since $$\rho_{\mathrm{copy}}$$ has the opposite sign.
 
 One lead came out of this study. Adding isotropic noise of the same size and decoding (iso-tFVD) gives Spearman 0.95 pooled and 0.80 within both families, which points to **decoder tolerance to latent noise**. It is only a lead, though: within the VAEs it ranks almost like PSNR, and the V-RAE decoder was trained with latent noise.
 
@@ -129,7 +129,7 @@ Positive:
 
 Negative (results that prune the search):
 
-- Curvature, spacing and other second-order statistics add nothing beyond $\rho_{\mathrm{copy}}$.
+- Curvature, spacing and other second-order statistics add nothing beyond $$\rho_{\mathrm{copy}}$$.
 - Straightening a latent space costs accuracy and collapses it; its freezing benefit is not reliable across seeds.
 - Neighbourhood preservation as defined is invalid.
 - Multimodal conditionals are not what causes freezing in this setup.
